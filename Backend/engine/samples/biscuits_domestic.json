@@ -1,0 +1,80 @@
+{
+  "inspection.date": "2026-09-11",
+  "extraction.coverage_complete": true,
+  "package.level": "retail",
+  "package.intended_for": "consumer",
+  "product.tags": [
+    "food",
+    "biscuits"
+  ],
+  "product.physical_state": "solid",
+  "product.is_imported": false,
+  "product.common_name": {
+    "value": "Glucose Biscuits",
+    "confidence": 0.98
+  },
+  "manufacturer.name": {
+    "value": "Sunrise Foods Pvt Ltd",
+    "confidence": 0.97
+  },
+  "manufacturer.role_qualified": {
+    "value": true,
+    "confidence": 0.95
+  },
+  "manufacturer.address.text": {
+    "value": "Plot 14, MIDC Industrial Area, Pune, Maharashtra 411019",
+    "confidence": 0.95
+  },
+  "manufacturer.address.city": {
+    "value": "Pune",
+    "confidence": 0.95
+  },
+  "manufacturer.address.state": {
+    "value": "Maharashtra",
+    "confidence": 0.95
+  },
+  "manufacturer.address.pin": {
+    "value": "411019",
+    "confidence": 0.95
+  },
+  "net_quantity.text": {
+    "value": "Net Wt. 200 g",
+    "confidence": 0.97
+  },
+  "net_quantity.value": {
+    "value": 200,
+    "confidence": 0.97
+  },
+  "net_quantity.unit": {
+    "value": "g",
+    "confidence": 0.97
+  },
+  "mrp.text": {
+    "value": "MRP Rs. 45.00 (inclusive of all taxes)",
+    "confidence": 0.96
+  },
+  "mrp.value": {
+    "value": 45.0,
+    "confidence": 0.96
+  },
+  "date_of_manufacture.month": {
+    "value": 6,
+    "confidence": 0.94
+  },
+  "date_of_manufacture.year": {
+    "value": 2026,
+    "confidence": 0.94
+  },
+  "label.declaration_languages": {
+    "value": [
+      "en",
+      "hi-Deva"
+    ],
+    "confidence": 0.99
+  },
+  "label.full_text": {
+    "value": "Sunrise Foods Pvt Ltd Glucose Biscuits Net Wt. 200 g MRP Rs. 45.00 inclusive of all taxes Mfd 06/2026",
+    "confidence": 0.95
+  },
+  "label.affixation": "printed_on_package"
+}
