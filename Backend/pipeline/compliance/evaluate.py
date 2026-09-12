@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Literal
+import re
 from pipeline import llm
 from pipeline.compliance import retrieval
 from pipeline.normalization import declarations as normalization
@@ -27,6 +28,21 @@ class Finding(BaseModel):
     observed: str | None = Field(default=None, description="What was found on the package, or null")
     explanation: str = Field(description="Two sentences at most")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @field_validator("rule_ref", mode="before")
+    @classmethod
+    def strip_rule_prefix(cls, value):
+        return re.sub(r"^\s*rules?\s+", "", str(value or ""), flags=re.IGNORECASE).strip()
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def missing_confidence_is_zero(cls, value):
+        return 0.0 if value is None else value
+
+    @field_validator("severity", mode="before")
+    @classmethod
+    def missing_severity_is_medium(cls, value):
+        return "MEDIUM" if value is None else value
 
 
 class Evaluation(BaseModel):

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pipeline import llm
 
 FIELDS = {
@@ -24,6 +24,11 @@ FIELDS = {
 class Declared(BaseModel):
     value: str | None = Field(default=None, description="Exact value read from the label, or null when absent")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def absent_confidence_is_zero(cls, value):
+        return 0.0 if value is None else value
 
 
 class PackageDeclarations(BaseModel):

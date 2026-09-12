@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from typing import Annotated
 from fastapi import Depends
 from dotenv import load_dotenv
+from config import EMBEDDING_DIM
 import os
 
 load_dotenv()
@@ -18,9 +19,6 @@ else:
 
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
-
-EMBEDDING_DIM = 768
-
 
 def embedding_column():
     if IS_POSTGRES:
