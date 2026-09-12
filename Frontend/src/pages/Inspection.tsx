@@ -93,12 +93,6 @@ function Inspection() {
                 </section>
             )}
 
-            {inspection.ocr_texts.length > 0 && (
-                <section className="panel">
-                    <OcrTextView ocrTexts={inspection.ocr_texts} images={inspection.images} />
-                </section>
-            )}
-
             {inspection.declarations.length > 0 && (
                 <section className="panel">
                     <DeclarationList declarations={inspection.declarations} />
@@ -108,6 +102,12 @@ function Inspection() {
             {inspection.evaluation && (
                 <section className="panel">
                     <EvaluationView evaluation={inspection.evaluation} />
+                </section>
+            )}
+
+            {inspection.ocr_texts.length > 0 && (
+                <section className="panel">
+                    <OcrTextView ocrTexts={inspection.ocr_texts} images={inspection.images} />
                 </section>
             )}
         </div>

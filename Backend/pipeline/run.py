@@ -34,7 +34,7 @@ def read_images(db, inspection_id: str) -> str:
         if text:
             panels.append(text)
 
-    db.flush()
+    db.commit()
     if not panels:
         raise RuntimeError("No readable text was found on the uploaded images")
     return "\n".join(panels)

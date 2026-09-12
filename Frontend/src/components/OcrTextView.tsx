@@ -7,7 +7,7 @@ type Props = {
 };
 
 const OcrTextView = ({ ocrTexts, images }: Props) => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(true);
 
     const nameFor = (item: OcrText) => {
         const image = images.find((candidate) => candidate.id === item.image_id);
@@ -26,8 +26,9 @@ const OcrTextView = ({ ocrTexts, images }: Props) => {
                         because it shows whether the reading or the extraction was at fault.
                     </p>
                 </div>
+                <span className="pill small">{total} characters</span>
                 <button className="ghostButton small" onClick={() => setOpen((value) => !value)}>
-                    {open ? "Hide" : `Show (${total} characters)`}
+                    {open ? "Hide" : "Show"}
                 </button>
             </div>
 
