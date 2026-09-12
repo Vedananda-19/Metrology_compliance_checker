@@ -14,8 +14,7 @@ opencv-python==4.10.0.84
 numpy==1.26.4
 pillow==11.0.0
 setuptools==75.6.0
-paddlepaddle==2.6.2
-paddleocr==2.9.1
+google-cloud-vision==3.10.1
 pypdfium2==4.30.0
 langchain==0.3.13
 langchain-core==0.3.28

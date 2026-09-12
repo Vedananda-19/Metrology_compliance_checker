@@ -11,6 +11,10 @@ const TONE: Record<string, string> = {
     PROCESSING: "info",
     FAILED: "bad",
     DRAFT: "muted",
+    CONFIRMED: "bad",
+    DISMISSED: "muted",
+    VERIFIED_COMPLIANT: "good",
+    VERIFIED_NON_COMPLIANT: "bad",
 };
 
 const LABELS: Record<string, string> = {
@@ -18,6 +22,10 @@ const LABELS: Record<string, string> = {
     REQUIRES_VERIFICATION: "Not verifiable",
     NOT_VERIFIABLE: "Not verifiable",
     REQUIRES_REVIEW: "Requires review",
+    CONFIRMED: "Violation confirmed",
+    DISMISSED: "Dismissed",
+    VERIFIED_COMPLIANT: "Verified compliant",
+    VERIFIED_NON_COMPLIANT: "Verified violation",
 };
 
 const StatusBadge = ({ value, size = "normal" }: { value: string | null | undefined; size?: "small" | "normal" }) => {

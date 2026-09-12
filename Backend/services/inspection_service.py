@@ -1,5 +1,5 @@
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from models import Inspections, InspectionImages, Users, Evaluations, Declarations, FindingReviews, STAGES, DECISIONS
 from services import storage_service
 from config import ALLOWED_IMAGE_TYPES
@@ -114,7 +114,7 @@ def create_inspection(title: str | None, db, user):
     return inspection
 
 
-def list_inspections(db, user, scope: str = "mine", officer_id: str | None = None):
+def list_inspections(db, user, scope: str = "mine", officer_id: str | None = None, q: str | None = None):
     query = db.query(Inspections)
 
     if scope == "all":
@@ -129,6 +129,22 @@ def list_inspections(db, user, scope: str = "mine", officer_id: str | None = Non
     else:
         query = query.filter(
             (Inspections.assigned_to == user.user_id) | (Inspections.user_id == user.user_id)
+        )
+
+    term = (q or "").strip()
+    if term:
+        like = f"%{term}%"
+        people = db.query(Users.id).filter(or_(Users.username.ilike(like), Users.full_name.ilike(like)))
+        query = query.filter(
+            or_(
+                Inspections.reference.ilike(like),
+                Inspections.title.ilike(like),
+                Inspections.note.ilike(like),
+                Inspections.status.ilike(like),
+                Inspections.stage.ilike(like),
+                Inspections.user_id.in_(people),
+                Inspections.assigned_to.in_(people),
+            )
         )
 
     return query.order_by(Inspections.created_at.desc()).all()

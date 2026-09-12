@@ -51,6 +51,7 @@ class Inspections(Base):
     declarations = relationship("Declarations", back_populates="inspection", cascade="all, delete-orphan")
     evaluation = relationship("Evaluations", back_populates="inspection", uselist=False, cascade="all, delete-orphan")
     reviews = relationship("FindingReviews", back_populates="inspection", cascade="all, delete-orphan")
+    font_measurements = relationship("FontMeasurements", back_populates="inspection", cascade="all, delete-orphan")
 
 
 class InspectionImages(Base):
@@ -113,6 +114,23 @@ class FindingReviews(Base):
 
     inspection = relationship("Inspections", back_populates="reviews")
     reviewer = relationship("Users")
+
+
+class FontMeasurements(Base):
+    __tablename__ = "font_measurements"
+
+    inspection_id = Column(String, ForeignKey("inspections.id", ondelete="CASCADE"), primary_key=True)
+    field = Column(String, primary_key=True)
+    measured_height_px = Column(Float)
+    measured_height_mm = Column(Float)
+    reference_size_mm = Column(Float, nullable=False)
+    reference_size_px = Column(Float)
+    scale_mm_per_pixel = Column(Float)
+    confidence = Column(Float, default=0.0)
+    status = Column(String, nullable=False)
+    detail = Column(String)
+
+    inspection = relationship("Inspections", back_populates="font_measurements")
 
 
 class RulePassages(Base):

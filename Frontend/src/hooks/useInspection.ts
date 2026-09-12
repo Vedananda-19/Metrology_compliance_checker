@@ -2,12 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../apis/api";
 import type { Decision, Inspection, InspectionDetail, InspectionImage, RuleCatalogue, Stage, User } from "../types/inspection";
 
-export const useInspections = (scope: "mine" | "all" = "mine", officerId?: string) =>
+export const useInspections = (scope: "mine" | "all" = "mine", officerId?: string, q?: string) =>
     useQuery({
-        queryKey: ["inspections", scope, officerId ?? null],
+        queryKey: ["inspections", scope, officerId ?? null, q ?? ""],
         queryFn: async () => {
             const params = new URLSearchParams({ scope });
             if (officerId) params.set("officer_id", officerId);
+            if (q?.trim()) params.set("q", q.trim());
             return (await api.get<Inspection[]>(`/inspections?${params}`)).data;
         },
     });

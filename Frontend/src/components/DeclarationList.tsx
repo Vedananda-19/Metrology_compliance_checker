@@ -46,11 +46,11 @@ const DeclarationList = ({ declarations, busy, onSave }: Props) => {
         <div className="stack">
             <div className="panelHeader">
                 <div>
-                    <h2>Declarations read from the package</h2>
+                    <h2>Declarations extracted from the OCR</h2>
                     {onSave && (
                         <p className="muted small">
-                            Correct anything the model misread, then re-check. The rule engine judges the corrected
-                            values.
+                            This is the language model's structured reading. Correct a field, then re-check — the rule
+                            engine runs again on the values you save, without re-photographing the package.
                         </p>
                     )}
                 </div>

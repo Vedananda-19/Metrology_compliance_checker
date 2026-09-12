@@ -88,6 +88,20 @@ class ReviseModel(BaseModel):
     values: dict[str, str | None]
 
 
+class FontMeasurementOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    field: str
+    measured_height_px: float | None = None
+    measured_height_mm: float | None = None
+    reference_size_mm: float
+    reference_size_px: float | None = None
+    scale_mm_per_pixel: float | None = None
+    confidence: float = 0.0
+    status: str
+    detail: str | None = None
+
+
 class InspectionOut(BaseModel):
     model_config = {"from_attributes": True}
 
@@ -111,3 +125,4 @@ class InspectionDetailOut(InspectionOut):
     declarations: list[DeclarationOut] = []
     evaluation: EvaluationOut | None = None
     reviews: list[FindingReviewOut] = []
+    font_measurements: list[FontMeasurementOut] = []

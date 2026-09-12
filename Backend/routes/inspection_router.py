@@ -15,6 +15,7 @@ from schemas import (
     FindingReviewOut,
     ReviewModel,
     ReviseModel,
+    FontMeasurementOut,
 )
 from services.auth_service import get_current_user
 from services import inspection_service, storage_service
@@ -39,8 +40,8 @@ def create_inspection(data: CreateInspectionModel, db: db_dependency, user: user
 
 
 @inspection_router.get("", response_model=list[InspectionOut])
-def list_inspections(db: db_dependency, user: user_dependency, scope: str = "mine", officer_id: str | None = None):
-    rows = inspection_service.list_inspections(db, user, scope, officer_id)
+def list_inspections(db: db_dependency, user: user_dependency, scope: str = "mine", officer_id: str | None = None, q: str | None = None):
+    rows = inspection_service.list_inspections(db, user, scope, officer_id, q)
     return [to_out(db, row) for row in rows]
 
 
@@ -61,6 +62,7 @@ def get_inspection(inspection_id: str, db: db_dependency, user: user_dependency)
         declarations=[DeclarationOut.model_validate(item) for item in inspection.declarations],
         evaluation=EvaluationOut.model_validate(inspection.evaluation) if inspection.evaluation else None,
         reviews=[FindingReviewOut.model_validate(item) for item in inspection.reviews],
+        font_measurements=[FontMeasurementOut.model_validate(item) for item in inspection.font_measurements],
     )
 
 
@@ -105,14 +107,14 @@ def get_image_file(inspection_id: str, image_id: str, db: db_dependency, user: u
 
 
 @inspection_router.post("/{inspection_id}/process", response_model=InspectionDetailOut)
-def process(inspection_id: str, db: db_dependency, user: user_dependency):
+def process(inspection_id: str, db: db_dependency, user: user_dependency, reference_size_mm: float | None = None):
     inspection = inspection_service.get_owned(db, inspection_id, user.user_id)
     inspection.status = "PROCESSING"
     inspection.error = None
     db.commit()
 
     try:
-        run_pipeline(db, inspection)
+        run_pipeline(db, inspection, reference_size_mm)
         inspection.status = "COMPLETED"
         db.commit()
     except Exception as error:

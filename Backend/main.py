@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine, enable_pgvector
-from config import ALLOWED_ORIGINS, LLM_ENABLED, LLM_MODEL, USE_SUPABASE_STORAGE
+from config import ALLOWED_ORIGINS, LLM_ENABLED, LLM_MODEL, USE_SUPABASE_STORAGE, VISION_ENABLED
 from routes.auth_router import auth_router
 from routes.inspection_router import inspection_router
 from routes.rule_router import rule_router
@@ -39,5 +39,6 @@ def health():
         "status": "ok",
         "llm_enabled": LLM_ENABLED,
         "llm_model": LLM_MODEL if LLM_ENABLED else None,
+        "ocr": "google-vision" if VISION_ENABLED else None,
         "storage": "supabase" if USE_SUPABASE_STORAGE else "local",
     }

@@ -1,6 +1,5 @@
 from database import SessionLocal, Base, engine, enable_pgvector
 from models import RulePassages
-from pipeline.preprocessing import images as preprocessing
 from pipeline.extraction import ocr
 from pipeline import llm
 from config import LEGAL_PDF_PATH
@@ -20,7 +19,7 @@ def page_texts(path: Path):
         rendered = document[index].render(scale=SCALE).to_pil()
         buffer = io.BytesIO()
         rendered.save(buffer, format="PNG")
-        text = ocr.read_text(preprocessing.prepare(buffer.getvalue()))
+        text = ocr.read_text(buffer.getvalue())
         print(f"  page {index + 1:>2}: {len(text):>5} characters")
         yield index + 1, text
 
@@ -60,7 +59,7 @@ def main():
     enable_pgvector()
     Base.metadata.create_all(bind=engine)
 
-    print(f"reading {path} with PaddleOCR (the scan has no text layer)")
+    print(f"reading {path} with Google Cloud Vision (the scan has no text layer)")
     pages = dict(page_texts(path))
     passages = split_into_passages(pages)
     print(f"segmented into {len(passages)} rule passages")
