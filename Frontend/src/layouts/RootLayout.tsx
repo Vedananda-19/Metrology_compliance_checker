@@ -8,10 +8,13 @@ const RootLayout = () => {
 
     return (
         <div className="appShell">
+            <a className="skipLink" href="#content">
+                Skip to content
+            </a>
             <Sidebar user={user ?? null} />
             <div className="appBody">
                 <Topbar user={user ?? null} />
-                <main className="appMain">
+                <main className="appMain" id="content">
                     <Outlet />
                 </main>
             </div>
