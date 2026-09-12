@@ -1,4 +1,4 @@
-from database import SessionLocal, Base, engine, enable_pgvector, IS_POSTGRES
+from database import SessionLocal, Base, engine, enable_pgvector
 from models import RulePassages
 from pipeline.preprocessing import images as preprocessing
 from pipeline.extraction import ocr
@@ -8,7 +8,7 @@ from pathlib import Path
 import io
 import re
 
-RULE_HEADING = re.compile(r"^\s*(\d{1,2})\s*\.\s+(.{4,})")
+RULE_HEADING = re.compile(r"^\s*(\d{1,2})\s*\.\s*([A-Za-z].{3,})")
 SCALE = 2.2
 
 
@@ -45,7 +45,7 @@ def split_into_passages(pages: dict[int, str]):
         passages.setdefault(current, {"page": page, "lines": []})["lines"].extend(buffer)
 
     return {
-        rule: {"page": data["page"], "text": " ".join(data["lines"])[:6000]}
+        rule: {"page": data["page"], "text": " ".join(data["lines"])[:9000]}
         for rule, data in passages.items()
         if len(" ".join(data["lines"])) > 60
     }
@@ -65,7 +65,7 @@ def main():
     passages = split_into_passages(pages)
     print(f"segmented into {len(passages)} rule passages")
 
-    embeddings = llm.get_embeddings() if IS_POSTGRES else None
+    embeddings = llm.get_embeddings()
     db = SessionLocal()
     try:
         db.query(RulePassages).delete()
@@ -84,7 +84,7 @@ def main():
         db.close()
 
     print(f"stored     : {len(passages)} passages")
-    print(f"embedded   : {embedded}" if embedded else "embedded   : skipped (needs Postgres and an LLM API key)")
+    print(f"embedded   : {embedded}" if embedded else "embedded   : skipped (no LLM API key configured)")
     print("passages are read from a scan, so retrieval quality depends on OCR")
 
 
