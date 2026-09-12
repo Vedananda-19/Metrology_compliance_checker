@@ -8,8 +8,6 @@ function Register() {
         password: "",
         confirmPassword: "",
         full_name: "",
-        designation: "",
-        office: "",
     });
     const [errorMsg, setErrorMsg] = useState("");
     const [busy, setBusy] = useState(false);
@@ -63,16 +61,6 @@ function Register() {
                         Full name
                         <input className="inset" value={form.full_name} onChange={update("full_name")} />
                     </label>
-                    <div className="fieldRow">
-                        <label className="fieldLabel">
-                            Designation
-                            <input className="inset" value={form.designation} onChange={update("designation")} />
-                        </label>
-                        <label className="fieldLabel">
-                            Office
-                            <input className="inset" value={form.office} onChange={update("office")} />
-                        </label>
-                    </div>
                     <button className="primaryButton" type="submit" disabled={busy}>
                         {busy ? "Creating…" : "Create account"}
                     </button>

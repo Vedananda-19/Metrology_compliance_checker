@@ -5,8 +5,7 @@ load_dotenv()
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_MINUTES = 20
-REFRESH_TOKEN_DAYS = 30
+ACCESS_TOKEN_HOURS = 12
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
@@ -20,7 +19,6 @@ LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.0-flash")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "models/text-embedding-004")
 LLM_ENABLED = bool(LLM_API_KEY)
 
-RULE_SET_VERSION = os.getenv("RULE_SET_VERSION", "2026.09-draft1")
 LEGAL_PDF_PATH = os.getenv("LEGAL_PDF_PATH", "legal/lmpc_2011.pdf")
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")

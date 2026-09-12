@@ -10,10 +10,8 @@ function Dashboard() {
     const navigate = useNavigate();
 
     const recent = (inspections ?? []).slice(0, 6);
-    const open = (inspections ?? []).filter((item) => item.status !== "FINALIZED").length;
-    const nonCompliant = (inspections ?? []).filter(
-        (item) => (item.final_verdict ?? item.automated_verdict) === "NON_COMPLIANT",
-    ).length;
+    const open = (inspections ?? []).filter((item) => item.status !== "COMPLETED").length;
+    const completed = (inspections ?? []).filter((item) => item.status === "COMPLETED").length;
 
     return (
         <div className="pageStack">
@@ -39,8 +37,8 @@ function Dashboard() {
                     <span className="statLabel">In progress</span>
                 </div>
                 <div className="panel stat">
-                    <span className="statValue">{nonCompliant}</span>
-                    <span className="statLabel">Non-compliant</span>
+                    <span className="statValue">{completed}</span>
+                    <span className="statLabel">Completed</span>
                 </div>
             </section>
 
@@ -61,7 +59,7 @@ function Dashboard() {
                     {recent.map((item) => (
                         <Link
                             key={item.id}
-                            to={item.status === "FINALIZED" ? `/report/${item.id}` : `/inspection/${item.id}`}
+                            to={`/inspection/${item.id}`}
                             className="inset inspectionRow"
                         >
                             <div className="inspectionRowMain">
@@ -70,7 +68,6 @@ function Dashboard() {
                             </div>
                             <div className="inspectionRowMeta">
                                 <StatusBadge value={item.status} size="small" />
-                                <StatusBadge value={item.final_verdict ?? item.automated_verdict} size="small" />
                                 <span className="muted small">{formatDate(item.created_at)}</span>
                             </div>
                         </Link>

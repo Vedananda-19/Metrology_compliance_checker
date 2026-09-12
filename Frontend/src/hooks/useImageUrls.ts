@@ -15,10 +15,6 @@ const useImageUrls = (inspectionId: string | undefined, images: InspectionImage[
         const load = async () => {
             const entries: Record<string, string> = {};
             for (const image of images) {
-                if (image.url) {
-                    entries[image.id] = image.url;
-                    continue;
-                }
                 try {
                     const response = await api.get(`/inspections/${inspectionId}/images/${image.id}/file`, {
                         responseType: "blob",

@@ -32,9 +32,7 @@ function History() {
                                     <th>Inspection ID</th>
                                     <th>Package</th>
                                     <th>Date</th>
-                                    <th>Stage</th>
-                                    <th>Compliance</th>
-                                    <th>Findings</th>
+                                    <th>Status</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -50,19 +48,9 @@ function History() {
                                             <StatusBadge value={item.status} size="small" />
                                         </td>
                                         <td>
-                                            <StatusBadge value={item.final_verdict ?? item.automated_verdict} size="small" />
-                                        </td>
-                                        <td>{item.violation_count}</td>
-                                        <td>
-                                            {item.status === "FINALIZED" ? (
-                                                <Link className="ghostButton small" to={`/report/${item.id}`}>
-                                                    View report
-                                                </Link>
-                                            ) : (
-                                                <Link className="ghostButton small" to={`/inspection/${item.id}`}>
-                                                    Resume
-                                                </Link>
-                                            )}
+                                            <Link className="ghostButton small" to={`/inspection/${item.id}`}>
+                                                Open
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))}

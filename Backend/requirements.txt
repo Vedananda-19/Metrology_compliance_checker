@@ -13,11 +13,10 @@ supabase==2.11.0
 opencv-python==4.10.0.84
 numpy==1.26.4
 pillow==11.0.0
+setuptools==75.6.0
 paddlepaddle==2.6.2
 paddleocr==2.9.1
 pypdfium2==4.30.0
-reportlab==4.2.5
 langchain==0.3.13
 langchain-core==0.3.28
-langgraph==0.2.60
 langchain-google-genai==2.0.7

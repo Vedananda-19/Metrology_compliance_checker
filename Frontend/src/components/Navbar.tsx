@@ -1,19 +1,14 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import api from "../apis/api";
 import { queryClient } from "../main";
 import type { User } from "../types/inspection";
 
 const Navbar = ({ user }: { user: User | null }) => {
     const navigate = useNavigate();
 
-    const handleLogout = async () => {
-        try {
-            await api.post("/auth/logout");
-        } finally {
-            localStorage.removeItem("access_token");
-            queryClient.removeQueries({ queryKey: ["user"] });
-            navigate("/");
-        }
+    const handleLogout = () => {
+        localStorage.removeItem("access_token");
+        queryClient.removeQueries({ queryKey: ["user"] });
+        navigate("/");
     };
 
     return (
@@ -33,7 +28,6 @@ const Navbar = ({ user }: { user: User | null }) => {
                     <NavLink to="/history">History</NavLink>
                     <div className="navUser">
                         <span className="navUserName">{user.full_name || user.username}</span>
-                        {user.designation && <small>{user.designation}</small>}
                     </div>
                     <button className="ghostButton" onClick={handleLogout}>
                         Sign out

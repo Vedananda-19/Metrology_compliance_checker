@@ -102,7 +102,7 @@ table { border-collapse: collapse; width: 100%; }
    BUTTONS
    ============================================================ */
 
-.primaryButton, .ghostButton, .dangerButton {
+.primaryButton, .ghostButton {
   border-radius: var(--radius-sm);
   padding: .6rem 1.15rem;
   font-weight: 600;
@@ -126,14 +126,8 @@ table { border-collapse: collapse; width: 100%; }
 .ghostButton:hover:not(:disabled) { box-shadow: var(--raise-hi); }
 .ghostButton:active:not(:disabled), .ghostButton.active { box-shadow: var(--sink); color: var(--color-brand); }
 
-.dangerButton {
-  background: var(--color-bad);
-  color: #fff;
-  box-shadow: var(--raise-soft);
-}
-.dangerButton:active:not(:disabled) { box-shadow: var(--sink); }
 
-.primaryButton:disabled, .ghostButton:disabled, .dangerButton:disabled { opacity: .5; cursor: not-allowed; }
+.primaryButton:disabled, .ghostButton:disabled { opacity: .5; cursor: not-allowed; }
 
 .large { padding: .8rem 1.6rem; font-size: .95rem; }
 .tiny { padding: .35rem .7rem; font-size: .78rem; }
@@ -364,34 +358,7 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
 .inspectionHeader { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .inspectionTitleRow { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
 
-.banner { padding: .9rem 1.2rem; font-size: .9rem; }
-.bannerWarn { background: var(--color-warn-soft); color: var(--color-warn); box-shadow: var(--raise-soft); }
-.bannerDanger { background: var(--color-bad-soft); color: var(--color-bad); box-shadow: var(--raise-soft); }
 
-.stepper {
-  display: flex;
-  list-style: none;
-  gap: .4rem;
-  padding: .9rem 1.1rem;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius);
-  box-shadow: var(--raise-soft);
-  overflow-x: auto;
-}
-.stepperItem { display: flex; align-items: center; gap: .5rem; flex: 1; min-width: 118px; }
-.stepperDot {
-  width: 11px; height: 11px; border-radius: 50%;
-  background: var(--color-surface-sunk);
-  box-shadow: var(--sink);
-  flex-shrink: 0;
-}
-.stepperLabel { font-size: .82rem; color: var(--color-text-faint); white-space: nowrap; }
-.stepper-done .stepperDot { background: var(--color-good); box-shadow: none; }
-.stepper-done .stepperLabel { color: var(--color-text-soft); }
-.stepper-active .stepperDot { background: var(--color-brand); box-shadow: 0 0 0 4px var(--color-brand-soft); }
-.stepper-active .stepperLabel { color: var(--color-brand-strong); font-weight: 700; }
-
-.stagePanel { padding: 1.6rem; }
 .actionBar {
   display: flex;
   gap: .75rem;
@@ -416,7 +383,7 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
 }
 .dropZone p { max-width: 56ch; font-size: .88rem; }
 
-.thumbGrid, .verifyGrid {
+.thumbGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 1.1rem;
@@ -425,12 +392,8 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
 .thumb img { width: 100%; height: 160px; object-fit: contain; border-radius: var(--radius-sm); background: var(--color-surface-sunk); }
 .thumb figcaption { display: grid; gap: .1rem; }
 .thumbName { font-size: .82rem; font-weight: 600; word-break: break-all; }
-.thumbActions, .verifyActions { display: flex; gap: .35rem; flex-wrap: wrap; }
+.thumbActions { display: flex; gap: .35rem; flex-wrap: wrap; }
 
-.verifyCard { display: grid; gap: .7rem; padding: .9rem; }
-.verifyImage { padding: .4rem; }
-.verifyImage img { width: 100%; height: 180px; object-fit: contain; display: block; }
-.verifyMeta { display: flex; justify-content: space-between; align-items: center; }
 
 /* ============================================================
    PROCESSING
@@ -449,26 +412,6 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
 .process-active .processIcon { background: var(--color-brand); box-shadow: 0 0 0 4px var(--color-brand-soft); }
 .process-failed .processIcon { background: var(--color-bad); box-shadow: none; }
 .process-todo { opacity: .6; }
-
-/* ============================================================
-   SPLIT VIEW AND VIEWER
-   ============================================================ */
-
-.splitView { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
-.splitLeft, .splitRight { display: grid; gap: .9rem; align-content: start; }
-.splitRight { max-height: 640px; overflow-y: auto; }
-
-.viewer { display: grid; gap: .7rem; }
-.viewerBar { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
-.viewerTabs, .filterRow { display: flex; gap: .4rem; flex-wrap: wrap; }
-.viewerZoom { display: flex; align-items: center; gap: .4rem; }
-.viewerStage { overflow: auto; padding: .5rem; }
-.viewerCanvas { position: relative; margin: 0 auto; }
-.viewerCanvas img { width: 100%; display: block; border-radius: var(--radius-sm); }
-.viewerOverlay { position: absolute; inset: 0; width: 100%; height: 100%; }
-.regionBox { fill: rgba(47, 111, 143, .08); stroke: rgba(47, 111, 143, .5); stroke-width: 2; }
-.regionFocus { fill: rgba(179, 32, 32, .16); stroke: var(--color-bad); stroke-width: 5; }
-.viewerFooter { display: flex; justify-content: space-between; }
 
 /* ============================================================
    DECLARATIONS
@@ -490,7 +433,6 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
    RULES AND FINDINGS
    ============================================================ */
 
-.ruleList, .findingList { display: grid; gap: .85rem; }
 .ruleCard { display: grid; gap: .7rem; padding: 1.1rem 1.2rem; }
 .ruleCardHead { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; flex-wrap: wrap; }
 .ruleCardHead h4 { margin-top: .3rem; }
@@ -510,30 +452,6 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
 .findingBadges { display: flex; align-items: center; gap: .4rem; }
 .findingActions { display: grid; gap: .5rem; }
 
-.advisory {
-  background: var(--color-info-soft);
-  border-radius: var(--radius-sm);
-  padding: .7rem .85rem;
-  display: grid;
-  gap: .4rem;
-  font-size: .85rem;
-}
-.advisoryHead { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-
-.reportViolation { display: grid; gap: .6rem; margin-bottom: .8rem; }
-
-/* ============================================================
-   FINAL REVIEW
-   ============================================================ */
-
-.summaryGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
-.summaryCell { display: grid; gap: .15rem; }
-.reviewColumns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-.reviewColumns h3 { margin: 1rem 0 .5rem; }
-.reviewColumns h3:first-child { margin-top: 0; }
-.plainList { list-style: none; display: grid; gap: .5rem; }
-.listRow { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; font-size: .87rem; }
-.listRow.column { display: grid; gap: .15rem; }
 
 /* ============================================================
    RESPONSIVE
@@ -542,18 +460,16 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
 @media (max-width: 900px) {
   .appMain { padding: 1.25rem; }
   .navbar { padding: .9rem 1.25rem; }
-  .splitView, .reviewColumns, .fieldRow { grid-template-columns: 1fr; }
-  .splitRight { max-height: none; }
+  .fieldRow { grid-template-columns: 1fr; }
   .landingHero { padding: 1.75rem; }
   .landingHero h1 { font-size: 1.6rem; }
   .heroPanel { flex-direction: column; align-items: stretch; }
-  .ruleMeta > div, .findingMeta > div { grid-template-columns: 1fr; gap: .1rem; }
 }
 
 @media (max-width: 560px) {
   .navLinks { gap: .7rem; }
   .navUser { display: none; }
-  .stepperLabel { display: none; }
-  .stepperItem { min-width: 0; }
   .panel { padding: 1.1rem; }
 }
+
+.findingList { display: grid; gap: .85rem; }

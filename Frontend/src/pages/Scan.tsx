@@ -6,7 +6,6 @@ import { errorMessage } from "../apis/api";
 
 function Scan() {
     const [title, setTitle] = useState("");
-    const [location, setLocation] = useState("");
     const [inspectionId, setInspectionId] = useState<string | null>(null);
     const [reference, setReference] = useState("");
     const [error, setError] = useState("");
@@ -18,7 +17,7 @@ function Scan() {
     const handleCreate = async (event: React.FormEvent) => {
         event.preventDefault();
         try {
-            const created = await createInspection.mutateAsync({ title, location });
+            const created = await createInspection.mutateAsync({ title });
             setInspectionId(created.id);
             setReference(created.reference);
             setError("");
@@ -56,15 +55,6 @@ function Scan() {
                                 onChange={(event) => setTitle(event.target.value)}
                                 placeholder="Aquapure anti-dandruff shampoo 100 ml"
                                 autoFocus
-                            />
-                        </label>
-                        <label className="fieldLabel">
-                            Location of inspection
-                            <input
-                                className="inset"
-                                value={location}
-                                onChange={(event) => setLocation(event.target.value)}
-                                placeholder="Market Yard, Pune"
                             />
                         </label>
                         <button className="primaryButton" type="submit" disabled={createInspection.isPending}>

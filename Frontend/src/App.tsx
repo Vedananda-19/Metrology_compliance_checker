@@ -7,7 +7,6 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Scan from "./pages/Scan";
 import Inspection from "./pages/Inspection";
-import Report from "./pages/Report";
 import History from "./pages/History";
 
 const router = createBrowserRouter([
@@ -23,7 +22,6 @@ const router = createBrowserRouter([
                     { path: "/dashboard", element: <Dashboard /> },
                     { path: "/scan", element: <Scan /> },
                     { path: "/inspection/:id", element: <Inspection /> },
-                    { path: "/report/:id", element: <Report /> },
                     { path: "/history", element: <History /> },
                 ],
             },
