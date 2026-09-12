@@ -2,6 +2,10 @@ const TONE: Record<string, string> = {
     COMPLIANT: "good",
     NON_COMPLIANT: "bad",
     NOT_VERIFIABLE: "warn",
+    REQUIRES_VERIFICATION: "warn",
+    EXEMPT: "muted",
+    OBSERVATION: "muted",
+    NOT_APPLICABLE: "muted",
     REQUIRES_REVIEW: "warn",
     COMPLETED: "good",
     PROCESSING: "info",
@@ -11,6 +15,7 @@ const TONE: Record<string, string> = {
 
 const LABELS: Record<string, string> = {
     NON_COMPLIANT: "Non-compliant",
+    REQUIRES_VERIFICATION: "Not verifiable",
     NOT_VERIFIABLE: "Not verifiable",
     REQUIRES_REVIEW: "Requires review",
 };

@@ -37,30 +37,30 @@ def read_images(db, inspection_id: str) -> str:
     db.commit()
     if not panels:
         raise RuntimeError("No readable text was found on the uploaded images")
-    return "\n".join(panels)
+    return "\n".join(panels), len(panels)
 
 
 def store_declarations(db, inspection_id: str, values: dict):
     db.query(Declarations).filter(Declarations.inspection_id == inspection_id).delete()
-    for field, item in values.items():
+    for path, item in values.items():
         db.add(
             Declarations(
                 inspection_id=inspection_id,
-                field=field,
-                value=item["value"],
+                field=path,
+                value=str(item["value"]),
                 confidence=item["confidence"],
             )
         )
     db.flush()
 
 
-def store_evaluation(db, inspection_id: str, evaluation):
+def store_evaluation(db, inspection_id: str, evaluation: dict):
     db.query(Evaluations).filter(Evaluations.inspection_id == inspection_id).delete()
     db.add(
         Evaluations(
             inspection_id=inspection_id,
-            verdict=evaluation.verdict,
-            result=evaluation.model_dump(),
+            verdict=evaluation["verdict"],
+            result=evaluation,
         )
     )
     db.flush()
@@ -70,11 +70,11 @@ def run_pipeline(db, inspection):
     if not llm.available():
         raise RuntimeError("No LLM API key is configured, so declarations cannot be extracted")
 
-    ocr_text = read_images(db, inspection.id)
+    ocr_text, panel_count = read_images(db, inspection.id)
     extracted = extraction.extract(ocr_text)
     values = normalization.normalize(extracted)
     store_declarations(db, inspection.id, values)
 
-    evaluation = compliance.evaluate(db, values)
+    evaluation = compliance.evaluate(values, panel_count, ocr_text)
     store_evaluation(db, inspection.id, evaluation)
     return evaluation

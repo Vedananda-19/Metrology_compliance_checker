@@ -1,4 +1,5 @@
 import logging
+import time
 from config import LLM_ENABLED, LLM_PROVIDER, LLM_API_KEY, LLM_MODEL, EMBEDDING_MODEL
 
 logger = logging.getLogger(__name__)
@@ -49,15 +50,23 @@ def structured(schema, temperature: float = 0.0):
     return model.with_structured_output(schema)
 
 
-def invoke_structured(schema, messages, temperature: float = 0.0):
+def invoke_structured(schema, messages, temperature: float = 0.0, attempts: int = 3):
     runnable = structured(schema, temperature)
     if runnable is None:
         return None
-    try:
-        return runnable.invoke(messages)
-    except Exception:
-        logger.exception("LLM structured call failed")
-        return None
+
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return runnable.invoke(messages)
+        except Exception as error:
+            last_error = error
+            logger.warning("LLM call failed (attempt %s of %s): %s", attempt, attempts, error)
+            if attempt < attempts:
+                time.sleep(1.5 * attempt)
+
+    logger.error("LLM call gave up after %s attempts: %s", attempts, last_error)
+    return None
 
 
 def extractor_tag(base: str) -> str:

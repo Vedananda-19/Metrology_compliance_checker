@@ -3,12 +3,24 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from typing import Annotated
 from fastapi import Depends
 from dotenv import load_dotenv
-from config import EMBEDDING_DIM
+from pathlib import Path
 import os
+
+
+def current_branch() -> str:
+    head = Path(__file__).resolve().parent.parent / ".git" / "HEAD"
+    try:
+        text = head.read_text(encoding="utf-8").strip()
+    except OSError:
+        return "default"
+    if text.startswith("ref:"):
+        return text.split("refs/heads/", 1)[-1].replace("/", "-") or "default"
+    return text[:7]
+
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/app.db")
+DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///./data/app-{current_branch()}.db"
 IS_POSTGRES = DATABASE_URL.startswith("postgres")
 
 if IS_POSTGRES:
@@ -19,6 +31,9 @@ else:
 
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
+
+EMBEDDING_DIM = 768
+
 
 def embedding_column():
     if IS_POSTGRES:

@@ -1,71 +1,87 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import Literal
-import re
-from pipeline import llm
-from pipeline.compliance import retrieval
+from engine import engine as rule_engine
 from pipeline.normalization import declarations as normalization
+from datetime import date
 
-SYSTEM_PROMPT = """You assist a Legal Metrology inspector checking a packaged commodity against
-The Legal Metrology (Packaged Commodities) Rules, 2011.
-
-You are given the declarations read from the package and the rule passages retrieved for it.
-
-- Judge only against the rule passages supplied. Do not cite a rule number or page that does not
-  appear in them, and do not rely on remembered law.
-- A declaration listed as not found means it was not detected on any uploaded panel. Treat that as
-  a likely omission, but say so as a finding rather than a certainty.
-- Use NOT_VERIFIABLE whenever the requirement needs physical measurement, a weighing test, a
-  registry lookup or handling the package. Never call such a requirement compliant.
-- This is a prototype assessment by a language model, not a determination. Keep every explanation
-  short and factual."""
+STATUS_MAP = {
+    "COMPLIANT": "COMPLIANT",
+    "NON_COMPLIANT": "NON_COMPLIANT",
+    "REQUIRES_VERIFICATION": "NOT_VERIFIABLE",
+    "EXEMPT": "EXEMPT",
+    "OBSERVATION": "OBSERVATION",
+}
+SHOWN = {"NON_COMPLIANT", "NOT_VERIFIABLE", "COMPLIANT", "EXEMPT", "OBSERVATION"}
+SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 
 
-class Finding(BaseModel):
-    rule_ref: str = Field(description="Rule number exactly as it appears in the supplied passages")
-    requirement: str = Field(description="What the rule requires, in one sentence")
-    status: Literal["COMPLIANT", "NON_COMPLIANT", "NOT_VERIFIABLE"]
-    severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] = "MEDIUM"
-    observed: str | None = Field(default=None, description="What was found on the package, or null")
-    explanation: str = Field(description="Two sentences at most")
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-
-    @field_validator("rule_ref", mode="before")
-    @classmethod
-    def strip_rule_prefix(cls, value):
-        return re.sub(r"^\s*rules?\s+", "", str(value or ""), flags=re.IGNORECASE).strip()
-
-    @field_validator("confidence", mode="before")
-    @classmethod
-    def missing_confidence_is_zero(cls, value):
-        return 0.0 if value is None else value
-
-    @field_validator("severity", mode="before")
-    @classmethod
-    def missing_severity_is_medium(cls, value):
-        return "MEDIUM" if value is None else value
+def observed_for(entry, facts: dict) -> str | None:
+    used = [item["fact"] for item in entry.get("evidence", [])]
+    parts = [f"{normalization.label_for(p)}: {facts[p]['value']}" for p in used if isinstance(facts.get(p), dict)]
+    if parts:
+        return "; ".join(parts[:3])
+    absent = entry.get("missing_facts") or []
+    if absent:
+        return "Not found on any panel: " + ", ".join(normalization.label_for(p) for p in absent[:3])
+    return None
 
 
-class Evaluation(BaseModel):
-    verdict: Literal["COMPLIANT", "NON_COMPLIANT", "REQUIRES_REVIEW"]
-    summary: str = Field(description="Two or three sentences for the inspector")
-    findings: list[Finding] = Field(default_factory=list)
+def explain(entry) -> str:
+    if entry["status"] == "NON_COMPLIANT":
+        return entry.get("reason") or "The package does not meet this requirement."
+    if entry["status"] == "REQUIRES_VERIFICATION":
+        return entry.get("reason") or "This requirement could not be decided from the uploaded images."
+    if entry["status"] == "EXEMPT":
+        return f"Exempt under {entry.get('exemption_ref')}." if entry.get("exemption_ref") else "Exempt."
+    return "The package meets this requirement."
 
 
-def evaluate(db, values: dict) -> Evaluation:
-    query = " ".join(item["value"] for item in values.values()) or "packaged commodity declarations"
-    passages = retrieval.search(db, query)
-
-    result = llm.invoke_structured(
-        Evaluation,
-        [
-            ("system", SYSTEM_PROMPT),
-            (
-                "human",
-                f"Declarations read from the package:\n{normalization.as_text(values)}\n\n"
-                f"Rule passages retrieved for this package:\n{retrieval.as_text(passages)}",
-            ),
-        ],
+def summarise(report: dict) -> str:
+    counts = report["counts"]
+    verdict = report["automated_verdict"]
+    if verdict == "NON_COMPLIANT":
+        lead = f"{counts['NON_COMPLIANT']} requirement(s) were not met."
+    elif verdict == "REQUIRES_VERIFICATION":
+        lead = "No violation was found, but some requirements could not be decided from the images."
+    elif verdict == "EXEMPT":
+        lead = "The package is exempt from these Rules."
+    else:
+        lead = "Every requirement that could be checked was met."
+    return (
+        f"{lead} {counts['COMPLIANT']} passed, {counts['REQUIRES_VERIFICATION']} need verification, "
+        f"{counts['EXEMPT']} exempt and {counts['NOT_APPLICABLE']} did not apply, "
+        f"out of {report['rules_evaluated']} rules in force."
     )
-    if result is None:
-        raise RuntimeError("Compliance evaluation failed: the language model returned nothing")
-    return result
+
+
+def evaluate(values: dict, panel_count: int, ocr_text: str) -> dict:
+    facts = normalization.build_facts(values, panel_count, ocr_text)
+    report = rule_engine.run(facts, on_date=date.today())
+
+    findings = []
+    for entry in report["results"]:
+        status = STATUS_MAP.get(entry["status"])
+        if status not in SHOWN:
+            continue
+        findings.append(
+            {
+                "rule_id": entry["rule_id"],
+                "rule_ref": entry["provision"],
+                "requirement": entry["title"],
+                "status": status,
+                "severity": entry["severity"],
+                "verification_mode": entry["verification_mode"],
+                "threshold_source": entry["threshold_source"],
+                "observed": observed_for(entry, facts),
+                "explanation": explain(entry),
+            }
+        )
+
+    findings.sort(key=lambda f: (f["status"] != "NON_COMPLIANT", SEVERITY_ORDER.get(f["severity"], 9)))
+
+    return {
+        "verdict": report["automated_verdict"],
+        "summary": summarise(report),
+        "rule_set_version": report["rule_set_version"],
+        "counts": report["counts"],
+        "rules_evaluated": report["rules_evaluated"],
+        "findings": findings,
+    }
