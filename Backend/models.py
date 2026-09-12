@@ -37,6 +37,7 @@ class Inspections(Base):
 
     inspector = relationship("Users", back_populates="inspections")
     images = relationship("InspectionImages", back_populates="inspection", cascade="all, delete-orphan")
+    ocr_texts = relationship("OcrTexts", back_populates="inspection", cascade="all, delete-orphan")
     declarations = relationship("Declarations", back_populates="inspection", cascade="all, delete-orphan")
     evaluation = relationship("Evaluations", back_populates="inspection", uselist=False, cascade="all, delete-orphan")
 
@@ -50,9 +51,21 @@ class InspectionImages(Base):
     original_filename = Column(String)
     content_type = Column(String)
     display_order = Column(Integer, default=0)
-    ocr_text = Column(Text)
 
     inspection = relationship("Inspections", back_populates="images")
+
+
+class OcrTexts(Base):
+    __tablename__ = "ocr_texts"
+
+    id = Column(String, primary_key=True, default=new_id)
+    inspection_id = Column(String, ForeignKey("inspections.id", ondelete="CASCADE"), nullable=False)
+    image_id = Column(String, ForeignKey("inspection_images.id", ondelete="CASCADE"))
+    display_order = Column(Integer, default=0)
+    text = Column(Text, nullable=False)
+
+    inspection = relationship("Inspections", back_populates="ocr_texts")
+    image = relationship("InspectionImages")
 
 
 class Declarations(Base):

@@ -4,6 +4,7 @@ import { useDeleteImage, useInspection, useProcess, useUploadImages } from "../h
 import useImageUrls from "../hooks/useImageUrls";
 import { errorMessage } from "../apis/api";
 import ImageUploader from "../components/ImageUploader";
+import OcrTextView from "../components/OcrTextView";
 import DeclarationList from "../components/DeclarationList";
 import EvaluationView from "../components/EvaluationView";
 import StatusBadge from "../components/StatusBadge";
@@ -89,6 +90,12 @@ function Inspection() {
                         Reading the panels with OCR, extracting declarations, retrieving rule passages and asking the
                         model to evaluate them. This takes a moment.
                     </p>
+                </section>
+            )}
+
+            {inspection.ocr_texts.length > 0 && (
+                <section className="panel">
+                    <OcrTextView ocrTexts={inspection.ocr_texts} images={inspection.images} />
                 </section>
             )}
 

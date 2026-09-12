@@ -473,3 +473,16 @@ button.small, a.small { padding: .45rem .9rem; font-size: .82rem; }
 }
 
 .findingList { display: grid; gap: .85rem; }
+.ocrList { display: grid; gap: .8rem; }
+.ocrPanel { display: grid; gap: .5rem; }
+.ocrPanelHead { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.ocrText {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: .8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+}

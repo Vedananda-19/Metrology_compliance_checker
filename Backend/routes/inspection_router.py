@@ -6,6 +6,7 @@ from schemas import (
     InspectionOut,
     InspectionDetailOut,
     ImageOut,
+    OcrTextOut,
     DeclarationOut,
     EvaluationOut,
 )
@@ -34,6 +35,7 @@ def get_inspection(inspection_id: str, db: db_dependency, user: user_dependency)
     return InspectionDetailOut(
         **InspectionOut.model_validate(inspection).model_dump(),
         images=[ImageOut.model_validate(image) for image in inspection.images],
+        ocr_texts=[OcrTextOut.model_validate(item) for item in sorted(inspection.ocr_texts, key=lambda x: x.display_order)],
         declarations=[DeclarationOut.model_validate(item) for item in inspection.declarations],
         evaluation=EvaluationOut.model_validate(inspection.evaluation) if inspection.evaluation else None,
     )

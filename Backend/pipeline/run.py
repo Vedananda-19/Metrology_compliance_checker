@@ -1,4 +1,4 @@
-from models import InspectionImages, Declarations, Evaluations
+from models import InspectionImages, OcrTexts, Declarations, Evaluations
 from services import storage_service
 from pipeline import llm
 from pipeline.preprocessing import images as preprocessing
@@ -17,11 +17,20 @@ def read_images(db, inspection_id: str) -> str:
     if not records:
         raise RuntimeError("Upload at least one image before processing")
 
+    db.query(OcrTexts).filter(OcrTexts.inspection_id == inspection_id).delete()
+
     panels = []
     for record in records:
         image = preprocessing.prepare(storage_service.download(record.storage_path))
         text = ocr.read_text(image)
-        record.ocr_text = text
+        db.add(
+            OcrTexts(
+                inspection_id=inspection_id,
+                image_id=record.id,
+                display_order=record.display_order,
+                text=text,
+            )
+        )
         if text:
             panels.append(text)
 

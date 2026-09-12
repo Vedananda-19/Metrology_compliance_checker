@@ -12,7 +12,13 @@ export interface InspectionImage {
     id: string;
     display_order: number;
     original_filename: string | null;
-    ocr_text: string | null;
+}
+
+export interface OcrText {
+    id: string;
+    image_id: string | null;
+    display_order: number;
+    text: string;
 }
 
 export interface Declaration {
@@ -51,6 +57,7 @@ export interface Inspection {
 
 export interface InspectionDetail extends Inspection {
     images: InspectionImage[];
+    ocr_texts: OcrText[];
     declarations: Declaration[];
     evaluation: Evaluation | null;
 }

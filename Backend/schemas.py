@@ -33,7 +33,15 @@ class ImageOut(BaseModel):
     id: str
     display_order: int
     original_filename: str | None = None
-    ocr_text: str | None = None
+
+
+class OcrTextOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: str
+    image_id: str | None = None
+    display_order: int
+    text: str
 
 
 class DeclarationOut(BaseModel):
@@ -64,5 +72,6 @@ class InspectionOut(BaseModel):
 
 class InspectionDetailOut(InspectionOut):
     images: list[ImageOut] = []
+    ocr_texts: list[OcrTextOut] = []
     declarations: list[DeclarationOut] = []
     evaluation: EvaluationOut | None = None
