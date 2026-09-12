@@ -74,6 +74,11 @@ class PackageDeclarations(BaseModel):
     dimensions_text: Declared = Field(default_factory=Declared)
     sheet_count: Declared = Field(default_factory=Declared)
 
+    @field_validator("*", mode="before")
+    @classmethod
+    def absent_field_is_blank(cls, value):
+        return Declared() if value is None else value
+
 
 SYSTEM_PROMPT = """You read OCR text taken from the panels of a packaged commodity sold in India and
 return the declarations printed on it.

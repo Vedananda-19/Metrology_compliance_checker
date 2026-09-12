@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from typing import Annotated
 from fastapi import Depends
 from dotenv import load_dotenv
+from config import EMBEDDING_DIM
 from pathlib import Path
 import os
 
@@ -21,6 +22,11 @@ def current_branch() -> str:
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///./data/app-{current_branch()}.db"
+
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 IS_POSTGRES = DATABASE_URL.startswith("postgres")
 
 if IS_POSTGRES:
@@ -31,9 +37,6 @@ else:
 
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
-
-EMBEDDING_DIM = 768
-
 
 def embedding_column():
     if IS_POSTGRES:
