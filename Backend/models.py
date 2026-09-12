@@ -15,6 +15,7 @@ def now_utc():
 
 ROLES = ["OFFICER", "INSPECTOR"]
 STAGES = ["ASSIGNED", "IN_PROGRESS", "ACTION_REQUIRED", "RESOLVED"]
+DECISIONS = ["CONFIRMED", "DISMISSED", "VERIFIED_COMPLIANT", "VERIFIED_NON_COMPLIANT"]
 
 
 class Users(Base):
@@ -49,6 +50,7 @@ class Inspections(Base):
     ocr_texts = relationship("OcrTexts", back_populates="inspection", cascade="all, delete-orphan")
     declarations = relationship("Declarations", back_populates="inspection", cascade="all, delete-orphan")
     evaluation = relationship("Evaluations", back_populates="inspection", uselist=False, cascade="all, delete-orphan")
+    reviews = relationship("FindingReviews", back_populates="inspection", cascade="all, delete-orphan")
 
 
 class InspectionImages(Base):
@@ -97,6 +99,20 @@ class Evaluations(Base):
     created_at = Column(DateTime(timezone=True), default=now_utc)
 
     inspection = relationship("Inspections", back_populates="evaluation")
+
+
+class FindingReviews(Base):
+    __tablename__ = "finding_reviews"
+
+    inspection_id = Column(String, ForeignKey("inspections.id", ondelete="CASCADE"), primary_key=True)
+    rule_id = Column(String, primary_key=True)
+    decision = Column(String, nullable=False)
+    note = Column(Text)
+    reviewed_by = Column(String, ForeignKey("users.id"))
+    reviewed_at = Column(DateTime(timezone=True), default=now_utc)
+
+    inspection = relationship("Inspections", back_populates="reviews")
+    reviewer = relationship("Users")
 
 
 class RulePassages(Base):

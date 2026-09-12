@@ -44,9 +44,13 @@ const CameraCapture = ({ onCapture, busy }: Props) => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext("2d")?.drawImage(video, 0, 0);
-        canvas.toBlob((blob) => {
+        canvas.toBlob(async (blob) => {
             if (!blob) return;
-            onCapture(new File([blob], `capture-${Date.now()}.png`, { type: "image/png" }));
+            try {
+                await onCapture(new File([blob], `capture-${Date.now()}.png`, { type: "image/png" }));
+            } catch {
+                /* Parent shows why the photo was rejected. */
+            }
         }, "image/png");
     };
 

@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useDeleteImage, useInspection, useProcess, useUploadImages } from "../hooks/useInspection";
+import {
+    useDeleteImage,
+    useInspection,
+    useProcess,
+    useReviewFinding,
+    useReviseDeclarations,
+    useUploadImages,
+} from "../hooks/useInspection";
 import useImageUrls from "../hooks/useImageUrls";
 import { errorMessage } from "../apis/api";
-import ImageUploader from "../components/ImageUploader";
+import ImageIntake from "../components/ImageIntake";
 import OcrTextView from "../components/OcrTextView";
 import DeclarationList from "../components/DeclarationList";
 import EvaluationView from "../components/EvaluationView";
@@ -18,6 +25,8 @@ function Inspection() {
     const uploadImages = useUploadImages(id);
     const deleteImage = useDeleteImage(id);
     const process = useProcess(id);
+    const reviewFinding = useReviewFinding(id);
+    const reviseDeclarations = useReviseDeclarations(id);
 
     if (isLoading) return <div className="routeState"><h5>Loading inspection…</h5></div>;
     if (!inspection) return <div className="routeState"><h5>Inspection not found</h5></div>;
@@ -28,6 +37,16 @@ function Inspection() {
             await action();
         } catch (caught) {
             setError(errorMessage(caught, fallback));
+        }
+    };
+
+    const addImages = async (files: File[], fallback: string) => {
+        try {
+            setError("");
+            await uploadImages.mutateAsync(files);
+        } catch (caught) {
+            setError(errorMessage(caught, fallback));
+            throw caught;
         }
     };
 
@@ -77,10 +96,11 @@ function Inspection() {
                         ))}
                     </div>
                 )}
-                <ImageUploader
-                    onSubmit={(files) => run(() => uploadImages.mutateAsync(files), "Could not upload")}
+                <ImageIntake
                     busy={uploadImages.isPending}
-                    submitLabel="Add images"
+                    uploadLabel="Add images"
+                    onCapture={(file) => addImages([file], "Could not keep this photo")}
+                    onUpload={(files) => addImages(files, "Could not upload")}
                 />
             </section>
 
@@ -95,13 +115,26 @@ function Inspection() {
 
             {inspection.declarations.length > 0 && (
                 <section className="panel">
-                    <DeclarationList declarations={inspection.declarations} />
+                    <DeclarationList
+                        declarations={inspection.declarations}
+                        busy={reviseDeclarations.isPending}
+                        onSave={(values) =>
+                            run(() => reviseDeclarations.mutateAsync(values), "Could not save the corrections")
+                        }
+                    />
                 </section>
             )}
 
             {inspection.evaluation && (
                 <section className="panel">
-                    <EvaluationView evaluation={inspection.evaluation} />
+                    <EvaluationView
+                        evaluation={inspection.evaluation}
+                        reviews={inspection.reviews}
+                        busy={reviewFinding.isPending}
+                        onReview={(ruleId, decision, note) =>
+                            run(() => reviewFinding.mutateAsync({ ruleId, decision, note }), "Could not save the review")
+                        }
+                    />
                 </section>
             )}
 

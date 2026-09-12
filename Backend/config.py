@@ -25,3 +25,5 @@ LEGAL_PDF_PATH = os.getenv("LEGAL_PDF_PATH", "legal/lmpc_2011.pdf")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 MAX_IMAGE_EDGE = 1600
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/bmp"}
+BLUR_SAMPLE_EDGE = int(os.getenv("BLUR_SAMPLE_EDGE", "640"))
+BLUR_MIN_VARIANCE = float(os.getenv("BLUR_MIN_VARIANCE", "80"))

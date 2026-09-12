@@ -1,9 +1,11 @@
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func
-from models import Inspections, InspectionImages, Users, Evaluations, STAGES
+from models import Inspections, InspectionImages, Users, Evaluations, Declarations, FindingReviews, STAGES, DECISIONS
 from services import storage_service
 from config import ALLOWED_IMAGE_TYPES
-from datetime import date
+from pipeline.extraction.declarations import FACT_MAP
+from pipeline.preprocessing import images as preprocessing
+from datetime import date, datetime, timezone
 import uuid
 
 STATUSES = ["DRAFT", "PROCESSING", "COMPLETED", "FAILED"]
@@ -164,13 +166,37 @@ def add_images(inspection_id: str, files: list[UploadFile], db, user):
     ).scalar()
 
     created = []
+    payloads = []
+    blurry = []
     for offset, upload in enumerate(files):
         if upload.content_type not in ALLOWED_IMAGE_TYPES:
             raise HTTPException(400, f"Unsupported image type {upload.content_type}")
         data = upload.file.read()
         if not data:
             raise HTTPException(400, f"{upload.filename} is empty")
+        try:
+            if preprocessing.too_blurry(data):
+                blurry.append(upload.filename or "this photo")
+                continue
+        except ValueError:
+            raise HTTPException(400, f"{upload.filename or 'This file'} could not be read as an image")
+        payloads.append((offset, upload, data))
 
+    if blurry:
+        names = ", ".join(blurry)
+        if len(blurry) == 1:
+            detail = (
+                f"{names} is too blurry to read the declarations. "
+                "Hold the package still and retake the photo."
+            )
+        else:
+            detail = (
+                f"These photos are too blurry to read: {names}. "
+                "Hold the package still and retake them."
+            )
+        raise HTTPException(400, detail)
+
+    for offset, upload, data in payloads:
         image_id = str(uuid.uuid4())
         suffix = (upload.filename or "image.jpg").rsplit(".", 1)[-1].lower()
         storage_path = f"inspections/{inspection.id}/{image_id}.{suffix}"
@@ -206,3 +232,79 @@ def delete_image(inspection_id: str, image_id: str, db, user):
         remaining.display_order = order
     db.commit()
     return {"message": "Image removed"}
+
+
+def can_review(inspection: Inspections, user) -> bool:
+    if user.role == "INSPECTOR":
+        return True
+    return (inspection.assigned_to or inspection.user_id) == user.user_id
+
+
+def review_finding(inspection_id: str, rule_id: str, decision: str | None, note: str | None, db, user):
+    inspection = get_visible(db, inspection_id, user)
+    if not can_review(inspection, user):
+        raise HTTPException(403, "This case belongs to another officer")
+
+    record = (
+        db.query(FindingReviews)
+        .filter(FindingReviews.inspection_id == inspection_id, FindingReviews.rule_id == rule_id)
+        .first()
+    )
+
+    if decision is None:
+        if record is not None:
+            db.delete(record)
+            db.commit()
+        return None
+
+    if decision not in DECISIONS:
+        raise HTTPException(400, f"Unknown decision {decision}")
+
+    if record is None:
+        record = FindingReviews(inspection_id=inspection_id, rule_id=rule_id, decision=decision)
+        db.add(record)
+    record.decision = decision
+    record.note = (note or "").strip()[:500] or None
+    record.reviewed_by = user.user_id
+    record.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def revise_declarations(inspection_id: str, values: dict, db, user):
+    inspection = get_visible(db, inspection_id, user)
+    if not can_review(inspection, user):
+        raise HTTPException(403, "This case belongs to another officer")
+    if inspection.status != "COMPLETED":
+        raise HTTPException(409, "Process the inspection before correcting declarations")
+
+    known = {path for path, _, _ in FACT_MAP.values()}
+    for field, value in values.items():
+        if field not in known:
+            raise HTTPException(400, f"Unknown declaration {field}")
+
+        record = (
+            db.query(Declarations)
+            .filter(Declarations.inspection_id == inspection_id, Declarations.field == field)
+            .first()
+        )
+        text = (value or "").strip()
+
+        if not text:
+            if record is not None:
+                db.delete(record)
+            continue
+
+        if record is None:
+            record = Declarations(inspection_id=inspection_id, field=field)
+            db.add(record)
+        record.value = text
+        record.confidence = 1.0
+
+    db.flush()
+    from pipeline.run import reevaluate
+
+    reevaluate(db, inspection_id)
+    db.commit()
+    return inspection

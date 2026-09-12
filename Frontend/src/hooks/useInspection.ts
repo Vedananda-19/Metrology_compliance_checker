@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../apis/api";
-import type { Inspection, InspectionDetail, InspectionImage, RuleCatalogue, Stage, User } from "../types/inspection";
+import type { Decision, Inspection, InspectionDetail, InspectionImage, RuleCatalogue, Stage, User } from "../types/inspection";
 
 export const useInspections = (scope: "mine" | "all" = "mine", officerId?: string) =>
     useQuery({
@@ -86,4 +86,17 @@ export const useUpdateCard = () => {
 export const useProcess = (id: string | undefined) =>
     useInspectionMutation(id, async () =>
         (await api.post<InspectionDetail>(`/inspections/${id}/process`)).data,
+    );
+
+export const useReviewFinding = (id: string | undefined) =>
+    useInspectionMutation(id, async (body: { ruleId: string; decision: Decision | null; note?: string }) =>
+        (await api.put<InspectionDetail>(`/inspections/${id}/findings/${body.ruleId}`, {
+            decision: body.decision,
+            note: body.note,
+        })).data,
+    );
+
+export const useReviseDeclarations = (id: string | undefined) =>
+    useInspectionMutation(id, async (values: Record<string, string | null>) =>
+        (await api.put<InspectionDetail>(`/inspections/${id}/declarations`, { values })).data,
     );

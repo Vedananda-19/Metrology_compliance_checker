@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { queryClient } from "../main";
 import type { User } from "../types/inspection";
 import Icon, { type IconName } from "./Icon";
@@ -9,7 +9,6 @@ const OFFICER_LINKS: NavItem[] = [
     { to: "/officer", label: "Dashboard", icon: "gauge", end: true },
     { to: "/officer/board", label: "Case board", icon: "columns" },
     { to: "/officer/capture", label: "New inspection", icon: "aperture" },
-    { to: "/officer/upload", label: "Upload images", icon: "upload" },
 ];
 
 const INSPECTOR_LINKS: NavItem[] = [
@@ -22,7 +21,6 @@ const SHARED_LINKS: NavItem[] = [
 ];
 
 const Sidebar = ({ user }: { user: User | null }) => {
-    const navigate = useNavigate();
     const primary = user ? (user.role === "INSPECTOR" ? INSPECTOR_LINKS : OFFICER_LINKS) : [];
     const links = user ? [...primary, ...SHARED_LINKS] : [];
     const home = user ? (user.role === "INSPECTOR" ? "/inspector" : "/officer") : "/";
@@ -30,7 +28,7 @@ const Sidebar = ({ user }: { user: User | null }) => {
     const signOut = () => {
         localStorage.removeItem("access_token");
         queryClient.clear();
-        navigate("/");
+        window.location.replace("/login");
     };
 
     return (

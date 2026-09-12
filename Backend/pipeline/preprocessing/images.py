@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from config import MAX_IMAGE_EDGE
+from config import BLUR_MIN_VARIANCE, BLUR_SAMPLE_EDGE, MAX_IMAGE_EDGE
 
 
 def decode(data: bytes):
@@ -28,3 +28,13 @@ def enhance(image):
 
 def prepare(data: bytes):
     return enhance(resize(decode(data)))
+
+
+def laplacian_variance(image) -> float:
+    sample = resize(image, BLUR_SAMPLE_EDGE)
+    gray = cv2.cvtColor(sample, cv2.COLOR_BGR2GRAY)
+    return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+
+def too_blurry(data: bytes) -> bool:
+    return laplacian_variance(decode(data)) < BLUR_MIN_VARIANCE

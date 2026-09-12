@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CameraCapture from "../components/CameraCapture";
+import ImageIntake from "../components/ImageIntake";
 import { useCreateInspection, useUploadImages } from "../hooks/useInspection";
 import { errorMessage } from "../apis/api";
 
@@ -27,23 +27,24 @@ function OfficerCapture() {
         }
     };
 
-    const capture = async (file: File) => {
+    const addFiles = async (files: File[], fallback: string) => {
         try {
-            await uploadImages.mutateAsync([file]);
-            setShots((count) => count + 1);
+            await uploadImages.mutateAsync(files);
+            setShots((count) => count + files.length);
             setError("");
         } catch (caught) {
-            setError(errorMessage(caught, "Could not upload the photo"));
+            setError(errorMessage(caught, fallback));
+            throw caught;
         }
     };
 
     return (
         <div className="pageStack narrow">
             <section className="panel">
-                <h1>Camera scan</h1>
+                <h1>New inspection</h1>
                 <p className="muted">
-                    Photograph every panel that carries a declaration. A declaration the camera never saw cannot be
-                    assessed.
+                    Photograph every panel that carries a declaration, or upload the photos you already took. A
+                    declaration the camera never saw cannot be assessed.
                 </p>
             </section>
 
@@ -61,7 +62,7 @@ function OfficerCapture() {
                             />
                         </label>
                         <button className="primaryButton" type="submit" disabled={createInspection.isPending}>
-                            {createInspection.isPending ? "Starting…" : "Start scanning"}
+                            {createInspection.isPending ? "Starting…" : "Start and add images"}
                         </button>
                         {error && <p className="errorMessage">{error}</p>}
                     </form>
@@ -69,13 +70,18 @@ function OfficerCapture() {
             ) : (
                 <section className="panel">
                     <div className="panelHeader">
-                        <h2>Capture panels</h2>
+                        <h2>Package images</h2>
                         <span className="pill">
-                            {reference} · {shots} captured
+                            {reference} · {shots} added
                         </span>
                     </div>
 
-                    <CameraCapture onCapture={capture} busy={uploadImages.isPending} />
+                    <ImageIntake
+                        busy={uploadImages.isPending}
+                        uploadLabel="Add images"
+                        onCapture={(file) => addFiles([file], "Could not keep this photo")}
+                        onUpload={(files) => addFiles(files, "Could not upload the images")}
+                    />
                     {error && <p className="errorMessage">{error}</p>}
 
                     <div className="actionBar">

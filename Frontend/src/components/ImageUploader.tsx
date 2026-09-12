@@ -6,7 +6,7 @@ type Pending = {
 };
 
 type Props = {
-    onSubmit: (files: File[]) => void;
+    onSubmit: (files: File[]) => void | Promise<void>;
     busy?: boolean;
     submitLabel?: string;
 };
@@ -49,12 +49,18 @@ const ImageUploader = ({ onSubmit, busy, submitLabel = "Upload and continue" }: 
         });
     };
 
-    const submit = () => {
+    const submit = async () => {
         if (!pending.length) {
             setError("Add at least one photograph of the package");
             return;
         }
-        onSubmit(pending.map((item) => item.file));
+        try {
+            await onSubmit(pending.map((item) => item.file));
+            pending.forEach((item) => URL.revokeObjectURL(item.preview));
+            setPending([]);
+        } catch {
+            /* Parent surfaces the error. Keep the files so they can retry or drop the blurry ones. */
+        }
     };
 
     return (

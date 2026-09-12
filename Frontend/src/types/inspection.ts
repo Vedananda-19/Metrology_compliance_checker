@@ -53,6 +53,21 @@ export interface Finding {
     explanation: string;
 }
 
+export type Decision = "CONFIRMED" | "DISMISSED" | "VERIFIED_COMPLIANT" | "VERIFIED_NON_COMPLIANT";
+
+export const DECISION_LABELS: Record<Decision, string> = {
+    CONFIRMED: "Violation confirmed",
+    DISMISSED: "Dismissed as a false reading",
+    VERIFIED_COMPLIANT: "Verified compliant",
+    VERIFIED_NON_COMPLIANT: "Verified non-compliant",
+};
+
+export interface FindingReview {
+    rule_id: string;
+    decision: Decision;
+    note: string | null;
+}
+
 export interface Evaluation {
     verdict: string | null;
     result: {
@@ -104,6 +119,7 @@ export interface InspectionDetail extends Inspection {
     ocr_texts: OcrText[];
     declarations: Declaration[];
     evaluation: Evaluation | null;
+    reviews: FindingReview[];
 }
 
 export const FIELD_LABELS: Record<string, string> = {

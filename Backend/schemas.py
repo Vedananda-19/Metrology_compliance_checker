@@ -71,6 +71,23 @@ class CardModel(BaseModel):
     note: str | None = None
 
 
+class FindingReviewOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    rule_id: str
+    decision: str
+    note: str | None = None
+
+
+class ReviewModel(BaseModel):
+    decision: Literal["CONFIRMED", "DISMISSED", "VERIFIED_COMPLIANT", "VERIFIED_NON_COMPLIANT"] | None = None
+    note: str | None = None
+
+
+class ReviseModel(BaseModel):
+    values: dict[str, str | None]
+
+
 class InspectionOut(BaseModel):
     model_config = {"from_attributes": True}
 
@@ -93,3 +110,4 @@ class InspectionDetailOut(InspectionOut):
     ocr_texts: list[OcrTextOut] = []
     declarations: list[DeclarationOut] = []
     evaluation: EvaluationOut | None = None
+    reviews: list[FindingReviewOut] = []

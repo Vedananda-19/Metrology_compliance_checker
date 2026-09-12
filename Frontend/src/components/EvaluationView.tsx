@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { Evaluation, FindingStatus } from "../types/inspection";
+import type { Decision, Evaluation, FindingReview as Review, FindingStatus } from "../types/inspection";
 import StatusBadge from "./StatusBadge";
+import FindingReview from "./FindingReview";
 
 const MODE_LABEL: Record<string, string> = {
     LABEL_AUTOMATED: "From label text",
@@ -18,7 +19,14 @@ const FILTERS: { key: FindingStatus | "ALL"; label: string }[] = [
     { key: "COMPLIANT", label: "Passed" },
 ];
 
-const EvaluationView = ({ evaluation }: { evaluation: Evaluation }) => {
+type Props = {
+    evaluation: Evaluation;
+    reviews?: Review[];
+    busy?: boolean;
+    onReview?: (ruleId: string, decision: Decision | null, note: string) => void;
+};
+
+const EvaluationView = ({ evaluation, reviews = [], busy, onReview }: Props) => {
     const [filter, setFilter] = useState<FindingStatus | "ALL">("ALL");
 
     const findings = evaluation.result.findings ?? [];
@@ -28,6 +36,7 @@ const EvaluationView = ({ evaluation }: { evaluation: Evaluation }) => {
         NOT_VERIFIABLE: findings.filter((f) => f.status === "NOT_VERIFIABLE").length,
     };
     const visible = filter === "ALL" ? findings : findings.filter((f) => f.status === filter);
+    const reviewOf = new Map(reviews.map((item) => [item.rule_id, item]));
 
     return (
         <div className="stack">
@@ -90,6 +99,14 @@ const EvaluationView = ({ evaluation }: { evaluation: Evaluation }) => {
                             {finding.threshold_source === "ENGINEERING_POLICY" &&
                                 " · depends on an implementation threshold, not a figure in the Rules"}
                         </span>
+                        {onReview && (
+                            <FindingReview
+                                status={finding.status}
+                                review={reviewOf.get(finding.rule_id)}
+                                busy={busy}
+                                onSave={(decision, note) => onReview(finding.rule_id, decision, note)}
+                            />
+                        )}
                     </article>
                 ))}
             </div>

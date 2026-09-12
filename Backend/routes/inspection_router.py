@@ -12,6 +12,9 @@ from schemas import (
     AssignModel,
     CardModel,
     UserOut,
+    FindingReviewOut,
+    ReviewModel,
+    ReviseModel,
 )
 from services.auth_service import get_current_user
 from services import inspection_service, storage_service
@@ -57,6 +60,7 @@ def get_inspection(inspection_id: str, db: db_dependency, user: user_dependency)
         ocr_texts=[OcrTextOut.model_validate(item) for item in sorted(inspection.ocr_texts, key=lambda x: x.display_order)],
         declarations=[DeclarationOut.model_validate(item) for item in inspection.declarations],
         evaluation=EvaluationOut.model_validate(inspection.evaluation) if inspection.evaluation else None,
+        reviews=[FindingReviewOut.model_validate(item) for item in inspection.reviews],
     )
 
 
@@ -68,6 +72,18 @@ def assign_case(inspection_id: str, data: AssignModel, db: db_dependency, user: 
 @inspection_router.patch("/{inspection_id}/card", response_model=InspectionOut)
 def update_card(inspection_id: str, data: CardModel, db: db_dependency, user: user_dependency):
     return to_out(db, inspection_service.update_card(inspection_id, data.stage, data.note, db, user))
+
+
+@inspection_router.put("/{inspection_id}/findings/{rule_id}", response_model=InspectionDetailOut)
+def review_finding(inspection_id: str, rule_id: str, data: ReviewModel, db: db_dependency, user: user_dependency):
+    inspection_service.review_finding(inspection_id, rule_id, data.decision, data.note, db, user)
+    return get_inspection(inspection_id, db, user)
+
+
+@inspection_router.put("/{inspection_id}/declarations", response_model=InspectionDetailOut)
+def revise_declarations(inspection_id: str, data: ReviseModel, db: db_dependency, user: user_dependency):
+    inspection_service.revise_declarations(inspection_id, data.values, db, user)
+    return get_inspection(inspection_id, db, user)
 
 
 @inspection_router.post("/{inspection_id}/images", response_model=list[ImageOut])

@@ -12,9 +12,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const url = error.config?.url ?? "";
+        if (error.response?.status === 401 && !url.endsWith("/auth/login")) {
             localStorage.removeItem("access_token");
-            queryClient.removeQueries({ queryKey: ["user"] });
+            queryClient.clear();
+            if (window.location.pathname !== "/login") window.location.replace("/login");
         }
         return Promise.reject(error);
     },

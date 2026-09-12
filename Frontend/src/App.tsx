@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import RootLayout from "./layouts/RootLayout";
 import ProtectedRoute from "./layouts/ProtectedRoute";
 import RoleRoute from "./layouts/RoleRoute";
@@ -11,7 +11,6 @@ import OfficerCapture from "./pages/OfficerCapture";
 import InspectorRepository from "./pages/InspectorRepository";
 import InspectorBoard from "./pages/InspectorBoard";
 import Rules from "./pages/Rules";
-import Scan from "./pages/Scan";
 import Inspection from "./pages/Inspection";
 import History from "./pages/History";
 
@@ -34,7 +33,7 @@ const router = createBrowserRouter([
                             { path: "/officer", element: <OfficerDashboard /> },
                             { path: "/officer/board", element: <OfficerBoard /> },
                             { path: "/officer/capture", element: <OfficerCapture /> },
-                            { path: "/officer/upload", element: <Scan /> },
+                            { path: "/officer/upload", element: <Navigate to="/officer/capture" replace /> },
                         ],
                     },
                     {

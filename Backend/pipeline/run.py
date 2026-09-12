@@ -5,6 +5,9 @@ from pipeline.preprocessing import images as preprocessing
 from pipeline.extraction import ocr, declarations as extraction
 from pipeline.normalization import declarations as normalization
 from pipeline.compliance import evaluate as compliance
+from pipeline.extraction.declarations import FACT_MAP
+
+KIND_BY_PATH = {path: kind for path, kind, _ in FACT_MAP.values()}
 
 
 def read_images(db, inspection_id: str) -> str:
@@ -77,4 +80,34 @@ def run_pipeline(db, inspection):
 
     evaluation = compliance.evaluate(values, panel_count, ocr_text)
     store_evaluation(db, inspection.id, evaluation)
+    return evaluation
+
+
+def stored_values(db, inspection_id: str) -> dict:
+    values = {}
+    records = db.query(Declarations).filter(Declarations.inspection_id == inspection_id).all()
+    for record in records:
+        kind = KIND_BY_PATH.get(record.field)
+        value = normalization.coerce(record.value, kind) if kind else record.value not in ("", "False", "None")
+        if value is None:
+            continue
+        values[record.field] = {"value": value, "confidence": record.confidence or 0.0}
+    return values
+
+
+def panels_of(db, inspection_id: str) -> tuple[str, int]:
+    rows = (
+        db.query(OcrTexts)
+        .filter(OcrTexts.inspection_id == inspection_id)
+        .order_by(OcrTexts.display_order)
+        .all()
+    )
+    panels = [row.text for row in rows if row.text]
+    return "\n".join(panels), len(panels)
+
+
+def reevaluate(db, inspection_id: str) -> dict:
+    ocr_text, panel_count = panels_of(db, inspection_id)
+    evaluation = compliance.evaluate(stored_values(db, inspection_id), panel_count, ocr_text)
+    store_evaluation(db, inspection_id, evaluation)
     return evaluation
