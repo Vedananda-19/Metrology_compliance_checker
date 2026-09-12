@@ -13,6 +13,10 @@ def now_utc():
     return datetime.now(timezone.utc)
 
 
+ROLES = ["OFFICER", "INSPECTOR"]
+STAGES = ["ASSIGNED", "IN_PROGRESS", "ACTION_REQUIRED", "RESOLVED"]
+
+
 class Users(Base):
     __tablename__ = "users"
 
@@ -20,8 +24,9 @@ class Users(Base):
     username = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     full_name = Column(String)
+    role = Column(String, nullable=False, default="OFFICER")
 
-    inspections = relationship("Inspections", back_populates="inspector")
+    inspections = relationship("Inspections", foreign_keys="Inspections.user_id", back_populates="inspector")
 
 
 class Inspections(Base):
@@ -32,10 +37,14 @@ class Inspections(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     title = Column(String)
     status = Column(String, nullable=False, default="DRAFT")
+    stage = Column(String, nullable=False, default=STAGES[0])
+    assigned_to = Column(String, ForeignKey("users.id"))
+    note = Column(Text)
     error = Column(Text)
     created_at = Column(DateTime(timezone=True), default=now_utc)
 
-    inspector = relationship("Users", back_populates="inspections")
+    inspector = relationship("Users", foreign_keys=[user_id], back_populates="inspections")
+    assignee = relationship("Users", foreign_keys=[assigned_to])
     images = relationship("InspectionImages", back_populates="inspection", cascade="all, delete-orphan")
     ocr_texts = relationship("OcrTexts", back_populates="inspection", cascade="all, delete-orphan")
     declarations = relationship("Declarations", back_populates="inspection", cascade="all, delete-orphan")

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api, { errorMessage } from "../apis/api";
 import { queryClient } from "../main";
 
@@ -9,7 +9,6 @@ function Login() {
     const [errorMsg, setErrorMsg] = useState("");
     const [busy, setBusy] = useState(false);
     const navigate = useNavigate();
-    const location = useLocation();
 
     const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -24,7 +23,8 @@ function Login() {
             localStorage.setItem("access_token", response.data.access_token);
             queryClient.invalidateQueries({ queryKey: ["user"] });
             setErrorMsg("");
-            navigate(location.state?.from?.pathname ?? "/dashboard");
+            const me = await api.get("/auth/me");
+            navigate(me.data.role === "INSPECTOR" ? "/inspector" : "/officer");
         } catch (error) {
             setErrorMsg(errorMessage(error, "Could not sign in"));
             setPassword("");

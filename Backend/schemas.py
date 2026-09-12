@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 
 class RegisterModel(BaseModel):
@@ -8,11 +8,13 @@ class RegisterModel(BaseModel):
     password: str
     confirmPassword: str
     full_name: str | None = None
+    role: Literal["OFFICER", "INSPECTOR"] = "OFFICER"
 
 
 class CurrentUser(BaseModel):
     user_id: str
     username: str
+    role: str = "OFFICER"
 
 
 class UserOut(BaseModel):
@@ -21,6 +23,7 @@ class UserOut(BaseModel):
     id: str
     username: str
     full_name: str | None = None
+    role: str = "OFFICER"
 
 
 class CreateInspectionModel(BaseModel):
@@ -59,6 +62,15 @@ class EvaluationOut(BaseModel):
     result: dict[str, Any] = {}
 
 
+class AssignModel(BaseModel):
+    officer_id: str | None = None
+
+
+class CardModel(BaseModel):
+    stage: str | None = None
+    note: str | None = None
+
+
 class InspectionOut(BaseModel):
     model_config = {"from_attributes": True}
 
@@ -66,8 +78,14 @@ class InspectionOut(BaseModel):
     reference: str
     title: str | None = None
     status: str
+    stage: str
+    note: str | None = None
     error: str | None = None
     created_at: datetime | None = None
+    assigned_to: str | None = None
+    assignee_name: str | None = None
+    owner_name: str | None = None
+    priority: str = "LOW"
 
 
 class InspectionDetailOut(InspectionOut):

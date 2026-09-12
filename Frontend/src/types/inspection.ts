@@ -1,11 +1,25 @@
 export type InspectionStatus = "DRAFT" | "PROCESSING" | "COMPLETED" | "FAILED";
 
+export type Role = "OFFICER" | "INSPECTOR";
+
+export type Stage = "ASSIGNED" | "IN_PROGRESS" | "ACTION_REQUIRED" | "RESOLVED";
+
+export const STAGES: { key: Stage; label: string }[] = [
+    { key: "ASSIGNED", label: "Assigned" },
+    { key: "IN_PROGRESS", label: "In progress" },
+    { key: "ACTION_REQUIRED", label: "Action required" },
+    { key: "RESOLVED", label: "Resolved" },
+];
+
+export type Priority = "HIGH" | "MEDIUM" | "LOW";
+
 export type FindingStatus = "COMPLIANT" | "NON_COMPLIANT" | "NOT_VERIFIABLE" | "EXEMPT" | "OBSERVATION";
 
 export interface User {
     id: string;
     username: string;
     full_name: string | null;
+    role: Role;
 }
 
 export interface InspectionImage {
@@ -56,8 +70,33 @@ export interface Inspection {
     reference: string;
     title: string | null;
     status: InspectionStatus;
+    stage: Stage;
+    note: string | null;
     error: string | null;
     created_at: string | null;
+    assigned_to: string | null;
+    assignee_name: string | null;
+    owner_name: string | null;
+    priority: Priority;
+}
+
+export interface RuleSummary {
+    rule_id: string;
+    version: number;
+    status: string;
+    provision: string;
+    pdf_page: number | null;
+    title: string;
+    text_excerpt: string | null;
+    severity: string;
+    verification_mode: string;
+    threshold_source: string;
+}
+
+export interface RuleCatalogue {
+    rule_set_version: string;
+    title: string;
+    rules: RuleSummary[];
 }
 
 export interface InspectionDetail extends Inspection {

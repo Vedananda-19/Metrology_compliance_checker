@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
+import Topbar from "../components/Topbar";
 import useUser from "../hooks/useUser";
 
 const RootLayout = () => {
@@ -7,10 +8,13 @@ const RootLayout = () => {
 
     return (
         <div className="appShell">
-            <Navbar user={user ?? null} />
-            <main className="appMain">
-                <Outlet />
-            </main>
+            <Sidebar user={user ?? null} />
+            <div className="appBody">
+                <Topbar user={user ?? null} />
+                <main className="appMain">
+                    <Outlet />
+                </main>
+            </div>
         </div>
     );
 };

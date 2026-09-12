@@ -26,6 +26,7 @@ def register_user(formData: RegisterModel, db: Session):
             username=formData.username,
             password=pwd_context.hash(formData.password),
             full_name=formData.full_name,
+            role=formData.role,
         )
     )
     db.commit()
@@ -34,7 +35,11 @@ def register_user(formData: RegisterModel, db: Session):
 
 def create_access_token(user: Users):
     expiry = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_HOURS)
-    token = jwt.encode({"id": user.id, "sub": user.username, "exp": expiry}, JWT_SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(
+        {"id": user.id, "sub": user.username, "role": user.role, "exp": expiry},
+        JWT_SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -53,7 +58,11 @@ def verify_token(db: db_dependency, token: str = Depends(OAuth2Scheme)) -> Curre
         user_id = payload.get("id")
         if user_id is None:
             raise HTTPException(401, "Unauthorized")
-        return CurrentUser(user_id=user_id, username=payload.get("sub"))
+        return CurrentUser(
+            user_id=user_id,
+            username=payload.get("sub"),
+            role=payload.get("role", "OFFICER"),
+        )
     except ExpiredSignatureError:
         raise HTTPException(401, "Expired Token")
     except JWTError:

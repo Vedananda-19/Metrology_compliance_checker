@@ -5,6 +5,7 @@ from database import Base, engine, enable_pgvector
 from config import ALLOWED_ORIGINS, LLM_ENABLED, LLM_MODEL, USE_SUPABASE_STORAGE
 from routes.auth_router import auth_router
 from routes.inspection_router import inspection_router
+from routes.rule_router import rule_router
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 app.include_router(auth_router)
 app.include_router(inspection_router)
+app.include_router(rule_router)
 
 
 @app.exception_handler(Exception)

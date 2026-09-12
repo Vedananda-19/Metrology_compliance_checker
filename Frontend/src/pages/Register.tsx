@@ -8,6 +8,7 @@ function Register() {
         password: "",
         confirmPassword: "",
         full_name: "",
+        role: "OFFICER",
     });
     const [errorMsg, setErrorMsg] = useState("");
     const [busy, setBusy] = useState(false);
@@ -60,6 +61,17 @@ function Register() {
                     <label className="fieldLabel">
                         Full name
                         <input className="inset" value={form.full_name} onChange={update("full_name")} />
+                    </label>
+                    <label className="fieldLabel">
+                        Role
+                        <select
+                            className="inset"
+                            value={form.role}
+                            onChange={(event) => setForm((previous) => ({ ...previous, role: event.target.value }))}
+                        >
+                            <option value="OFFICER">Officer, does the fieldwork</option>
+                            <option value="INSPECTOR">Inspector, assigns and supervises</option>
+                        </select>
                     </label>
                     <button className="primaryButton" type="submit" disabled={busy}>
                         {busy ? "Creating…" : "Create account"}

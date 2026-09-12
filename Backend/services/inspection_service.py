@@ -1,6 +1,6 @@
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func
-from models import Inspections, InspectionImages
+from models import Inspections, InspectionImages, Users, Evaluations, STAGES
 from services import storage_service
 from config import ALLOWED_IMAGE_TYPES
 from datetime import date
@@ -15,12 +15,92 @@ def next_reference(db) -> str:
     return f"{prefix}{count + 1:05d}"
 
 
+SEVERITY_PRIORITY = {"CRITICAL": "HIGH", "HIGH": "HIGH", "MEDIUM": "MEDIUM", "LOW": "LOW", "INFO": "LOW"}
+PRIORITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+
+
+def can_see(inspection: Inspections, user) -> bool:
+    if user.role == "INSPECTOR":
+        return True
+    return inspection.user_id == user.user_id or inspection.assigned_to == user.user_id
+
+
+def get_visible(db, inspection_id: str, user) -> Inspections:
+    inspection = db.query(Inspections).filter(Inspections.id == inspection_id).first()
+    if inspection is None:
+        raise HTTPException(404, "Inspection not found")
+    if not can_see(inspection, user):
+        raise HTTPException(403, "This case belongs to another officer")
+    return inspection
+
+
 def get_owned(db, inspection_id: str, user_id: str) -> Inspections:
     inspection = db.query(Inspections).filter(Inspections.id == inspection_id).first()
     if inspection is None:
         raise HTTPException(404, "Inspection not found")
-    if inspection.user_id != user_id:
-        raise HTTPException(403, "This inspection belongs to another inspector")
+    if inspection.user_id != user_id and inspection.assigned_to != user_id:
+        raise HTTPException(403, "This case belongs to another officer")
+    return inspection
+
+
+def derive_priority(db, inspection: Inspections) -> str:
+    record = db.query(Evaluations).filter(Evaluations.inspection_id == inspection.id).first()
+    if record is None or not record.result:
+        return "LOW"
+    severities = [
+        f.get("severity")
+        for f in (record.result.get("findings") or [])
+        if f.get("status") == "NON_COMPLIANT"
+    ]
+    if not severities:
+        return "LOW"
+    return min((SEVERITY_PRIORITY.get(s, "LOW") for s in severities), key=lambda p: PRIORITY_ORDER[p])
+
+
+def list_officers(db):
+    return db.query(Users).filter(Users.role == "OFFICER").order_by(Users.username).all()
+
+
+def assign(inspection_id: str, officer_id: str | None, db, user):
+    if user.role != "INSPECTOR":
+        raise HTTPException(403, "Only an inspector can assign cases")
+
+    inspection = db.query(Inspections).filter(Inspections.id == inspection_id).first()
+    if inspection is None:
+        raise HTTPException(404, "Inspection not found")
+
+    if officer_id is not None:
+        officer = db.query(Users).filter(Users.id == officer_id, Users.role == "OFFICER").first()
+        if officer is None:
+            raise HTTPException(400, "That officer does not exist")
+
+    inspection.assigned_to = officer_id
+    inspection.stage = STAGES[0]
+    db.commit()
+    db.refresh(inspection)
+    return inspection
+
+
+def update_card(inspection_id: str, stage: str | None, note: str | None, db, user):
+    if user.role == "INSPECTOR":
+        raise HTTPException(403, "An inspector views officer boards read-only")
+
+    inspection = db.query(Inspections).filter(Inspections.id == inspection_id).first()
+    if inspection is None:
+        raise HTTPException(404, "Inspection not found")
+
+    owner = inspection.assigned_to or inspection.user_id
+    if owner != user.user_id:
+        raise HTTPException(403, "This card is on another officer's board")
+
+    if stage is not None:
+        if stage not in STAGES:
+            raise HTTPException(400, f"Unknown stage {stage}")
+        inspection.stage = stage
+    if note is not None:
+        inspection.note = note.strip()[:500]
+    db.commit()
+    db.refresh(inspection)
     return inspection
 
 
@@ -32,13 +112,24 @@ def create_inspection(title: str | None, db, user):
     return inspection
 
 
-def list_inspections(db, user):
-    return (
-        db.query(Inspections)
-        .filter(Inspections.user_id == user.user_id)
-        .order_by(Inspections.created_at.desc())
-        .all()
-    )
+def list_inspections(db, user, scope: str = "mine", officer_id: str | None = None):
+    query = db.query(Inspections)
+
+    if scope == "all":
+        if user.role != "INSPECTOR":
+            raise HTTPException(403, "Only an inspector can see every case")
+    elif officer_id:
+        if user.role != "INSPECTOR" and officer_id != user.user_id:
+            raise HTTPException(403, "You can only see your own cases")
+        query = query.filter(Inspections.assigned_to == officer_id)
+    elif user.role == "INSPECTOR":
+        query = query.filter(Inspections.user_id == user.user_id)
+    else:
+        query = query.filter(
+            (Inspections.assigned_to == user.user_id) | (Inspections.user_id == user.user_id)
+        )
+
+    return query.order_by(Inspections.created_at.desc()).all()
 
 
 def list_images(db, inspection_id: str):

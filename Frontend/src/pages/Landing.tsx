@@ -22,8 +22,8 @@ function Landing() {
                 </p>
                 <div className="landingActions">
                     {user ? (
-                        <Link className="primaryButton" to="/scan">
-                            Start an inspection
+                        <Link className="primaryButton" to={user.role === "INSPECTOR" ? "/inspector" : "/officer"}>
+                            Go to your dashboard
                         </Link>
                     ) : (
                         <>

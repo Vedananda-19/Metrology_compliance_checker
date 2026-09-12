@@ -1,11 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../apis/api";
-import type { Inspection, InspectionDetail, InspectionImage } from "../types/inspection";
+import type { Inspection, InspectionDetail, InspectionImage, RuleCatalogue, Stage, User } from "../types/inspection";
 
-export const useInspections = () =>
+export const useInspections = (scope: "mine" | "all" = "mine", officerId?: string) =>
     useQuery({
-        queryKey: ["inspections"],
-        queryFn: async () => (await api.get<Inspection[]>("/inspections")).data,
+        queryKey: ["inspections", scope, officerId ?? null],
+        queryFn: async () => {
+            const params = new URLSearchParams({ scope });
+            if (officerId) params.set("officer_id", officerId);
+            return (await api.get<Inspection[]>(`/inspections?${params}`)).data;
+        },
+    });
+
+export const useOfficers = (enabled = true) =>
+    useQuery({
+        queryKey: ["officers"],
+        enabled,
+        queryFn: async () => (await api.get<User[]>("/inspections/officers/list")).data,
+    });
+
+export const useRules = () =>
+    useQuery({
+        queryKey: ["rules"],
+        staleTime: Infinity,
+        queryFn: async () => (await api.get<RuleCatalogue>("/rules")).data,
     });
 
 export const useInspection = (id: string | undefined) =>
@@ -46,6 +64,24 @@ export const useDeleteImage = (id: string | undefined) =>
     useInspectionMutation(id, async (imageId: string) =>
         (await api.delete(`/inspections/${id}/images/${imageId}`)).data,
     );
+
+export const useAssign = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (body: { id: string; officer_id: string | null }) =>
+            (await api.patch<Inspection>(`/inspections/${body.id}/assign`, { officer_id: body.officer_id })).data,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inspections"] }),
+    });
+};
+
+export const useUpdateCard = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (body: { id: string; stage?: Stage; note?: string }) =>
+            (await api.patch<Inspection>(`/inspections/${body.id}/card`, { stage: body.stage, note: body.note })).data,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inspections"] }),
+    });
+};
 
 export const useProcess = (id: string | undefined) =>
     useInspectionMutation(id, async () =>
