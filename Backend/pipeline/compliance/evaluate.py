@@ -13,9 +13,25 @@ SHOWN = {"NON_COMPLIANT", "NOT_VERIFIABLE", "COMPLIANT", "EXEMPT", "OBSERVATION"
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 
 
+def _display(path: str, facts: dict) -> str | None:
+    if path == "net_quantity.text":
+        value = facts.get("net_quantity.value")
+        unit = facts.get("net_quantity.unit")
+        if isinstance(value, dict):
+            suffix = f" {unit['value']}" if isinstance(unit, dict) else ""
+            return f"Net quantity: {value['value']}{suffix}"
+    if path == "mrp.text":
+        value = facts.get("mrp.value")
+        if isinstance(value, dict):
+            return f"MRP: Rs {value['value']}"
+    if isinstance(facts.get(path), dict):
+        return f"{normalization.label_for(path)}: {facts[path]['value']}"
+    return None
+
+
 def observed_for(entry, facts: dict) -> str | None:
     used = [item["fact"] for item in entry.get("evidence", [])]
-    parts = [f"{normalization.label_for(p)}: {facts[p]['value']}" for p in used if isinstance(facts.get(p), dict)]
+    parts = [display for p in used if (display := _display(p, facts))]
     if parts:
         return "; ".join(parts[:3])
     absent = entry.get("missing_facts") or []

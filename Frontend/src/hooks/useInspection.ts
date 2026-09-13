@@ -101,3 +101,26 @@ export const useReviseDeclarations = (id: string | undefined) =>
     useInspectionMutation(id, async (values: Record<string, string | null>) =>
         (await api.put<InspectionDetail>(`/inspections/${id}/declarations`, { values })).data,
     );
+
+export const useFinalize = (id: string | undefined) =>
+    useInspectionMutation(id, async () =>
+        (await api.patch<InspectionDetail>(`/inspections/${id}/finalize`)).data,
+    );
+
+export const downloadReport = async (id: string, format: "pdf" | "docx") => {
+    const response = await api.get(`/inspections/${id}/report`, {
+        params: { format },
+        responseType: "blob",
+    });
+    const disposition = response.headers["content-disposition"] ?? "";
+    const match = /filename="?([^"]+)"?/.exec(disposition);
+    const filename = match ? match[1] : `report.${format}`;
+    const url = URL.createObjectURL(response.data as Blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+};

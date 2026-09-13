@@ -1,0 +1,27 @@
+Concise digest of the Legal Metrology (Packaged Commodities) Rules, 2011, Chapter II
+(pages 4-25 of the official rules), for retail-sale packages. Background context only;
+the specific rule text for each violation is supplied separately.
+
+Rule 3 - Applicability: This chapter applies to packages for retail sale. It does not apply to packages over 25 kg or 25 litre (cement and fertiliser in bags up to 50 kg excepted), nor to packages for industrial or institutional consumers.
+
+Rule 4 - Duty to declare: No person may pre-pack or sell a commodity in packaged form unless the package bears, or has a securely affixed label bearing, the declarations required by these rules.
+
+Rule 5 - Standard packages: Commodities in the Second and Third Schedules must be packed in the prescribed standard quantities.
+
+Rule 6 - Mandatory declarations on every package: (a) name and address of the manufacturer, or packer, or importer; (b) the common or generic name of the commodity; (c) the net quantity in standard units of weight, measure or number; (d) the month and year of manufacture, pre-packing or import; (e) the retail sale price as 'Maximum Retail Price Rs ... inclusive of all taxes'; (f) consumer-care details - name, address, telephone and email of the person to contact for complaints. Declarations must be legible, prominent and conspicuous.
+
+Rule 7 - Principal display panel, letter and numeral height: Declarations sit on the principal display panel. The height of numerals and letters must meet the minimum in the Rule 7 tables, scaled to the package's principal-display-panel area (larger panels require taller characters, e.g. 1 mm up to 50 sq cm rising to 6 mm above 2500 sq cm). Letters blown, formed, moulded, embossed or perforated on the package need at least 2 mm. Letter width must be at least one-third of its height.
+
+Rule 8 - Where declarations appear: Every declaration must appear on the principal display panel or, where allowed, be grouped together and not scattered.
+
+Rule 9 - Manner of declaration: Declarations must be in Hindi in Devanagari script or in English, definite, plain and conspicuous, not affixed by a sticker that hides the printed information except as permitted.
+
+Rule 10 - Name and address: The name and complete address of the manufacturer, packer or importer must be given. Where a party is not the manufacturer, the role ('Manufactured by', 'Packed by', 'Marketed by', 'Imported by') must be stated.
+
+Rule 11 to 13 - Quantity: Net quantity must be declared in standard SI units - by weight for solids, volume for liquids, and by number where sold by count. Units and their abbreviations must follow the prescribed convention; no qualifying words such as 'minimum' or 'about' that mislead.
+
+Rule 14 to 17 - Dimensions, sheets and containers: Certain commodities must declare dimensions; products sold by sheet must declare the number of usable sheets; container-type commodities must declare capacity.
+
+Rule 18 to 25 - Wholesale, inspection, error and export: Provisions for wholesale packages, inspection of quantity, maximum permissible error, deceptive or non-conforming packages, and export packages.
+
+Rule 26 - Exemptions: Small packages and specified categories are exempt from some declarations, for example very small net quantities.

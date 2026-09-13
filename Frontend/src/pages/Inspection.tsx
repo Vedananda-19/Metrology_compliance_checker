@@ -7,6 +7,8 @@ import {
     useReviewFinding,
     useReviseDeclarations,
     useUploadImages,
+    useFinalize,
+    downloadReport,
 } from "../hooks/useInspection";
 import useImageUrls from "../hooks/useImageUrls";
 import { errorMessage } from "../apis/api";
@@ -49,6 +51,8 @@ function Inspection() {
     const process = useProcess(id);
     const reviewFinding = useReviewFinding(id);
     const reviseDeclarations = useReviseDeclarations(id);
+    const finalize = useFinalize(id);
+    const [downloading, setDownloading] = useState<"pdf" | "docx" | null>(null);
 
     if (isLoading) return <div className="routeState"><h5>Loading inspection…</h5></div>;
     if (!inspection) return <div className="routeState"><h5>Inspection not found</h5></div>;
@@ -88,11 +92,24 @@ function Inspection() {
             setView("findings");
         }, "Processing failed");
 
+    const getReport = async (format: "pdf" | "docx") => {
+        if (!id) return;
+        try {
+            setError("");
+            setDownloading(format);
+            await downloadReport(id, format);
+        } catch (caught) {
+            setError(errorMessage(caught, "Could not create the report"));
+        } finally {
+            setDownloading(null);
+        }
+    };
+
     const findings = inspection.evaluation?.result.findings ?? [];
     const pending =
         findings.filter(
             (item) =>
-                (item.status === "NON_COMPLIANT" || item.status === "NOT_VERIFIABLE") &&
+                item.status === "NON_COMPLIANT" &&
                 !inspection.reviews.some((review) => review.rule_id === item.rule_id),
         ).length;
 
@@ -230,9 +247,59 @@ function Inspection() {
                         <button className="ghostButton" onClick={() => setView("declarations")}>
                             Correct declarations and re-check
                         </button>
-                        <button className="primaryButton" onClick={rerun} disabled={process.isPending}>
+                        <button className="ghostButton" onClick={rerun} disabled={process.isPending}>
                             Rerun from images
                         </button>
+                    </div>
+
+                    <div className="verifyBar">
+                        {inspection.verification_complete ? (
+                            <>
+                                <div>
+                                    <strong className="verifyDone">Verification complete</strong>
+                                    <p className="muted tiny">
+                                        {inspection.verified_by_name
+                                            ? `Signed off by ${inspection.verified_by_name}.`
+                                            : "This audit is signed off."}{" "}
+                                        Generate the official report.
+                                    </p>
+                                </div>
+                                <div className="verifyActions">
+                                    <button
+                                        className="primaryButton"
+                                        onClick={() => getReport("pdf")}
+                                        disabled={downloading !== null}
+                                    >
+                                        {downloading === "pdf" ? "Creating PDF…" : "Create PDF"}
+                                    </button>
+                                    <button
+                                        className="ghostButton"
+                                        onClick={() => getReport("docx")}
+                                        disabled={downloading !== null}
+                                    >
+                                        {downloading === "docx" ? "Creating DOCX…" : "Create DOCX"}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div>
+                                    <strong>Finalise this audit</strong>
+                                    <p className="muted tiny">
+                                        {pending > 0
+                                            ? `Review the ${pending} remaining finding${pending === 1 ? "" : "s"} before you can create the report.`
+                                            : "Every violation is reviewed. Mark verification done to unlock the report."}
+                                    </p>
+                                </div>
+                                <button
+                                    className="primaryButton"
+                                    onClick={() => run(() => finalize.mutateAsync(), "Could not finalise verification")}
+                                    disabled={pending > 0 || finalize.isPending}
+                                >
+                                    {finalize.isPending ? "Finalising…" : "Mark verification done"}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </section>
             )}

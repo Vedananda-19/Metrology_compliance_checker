@@ -117,6 +117,9 @@ class InspectionOut(BaseModel):
     assignee_name: str | None = None
     owner_name: str | None = None
     priority: str = "LOW"
+    verification_complete: bool = False
+    verified_at: datetime | None = None
+    verified_by_name: str | None = None
 
 
 class InspectionDetailOut(InspectionOut):

@@ -1,7 +1,7 @@
 from models import InspectionImages, OcrTexts, Declarations, Evaluations, FontMeasurements
 from services import storage_service
 from pipeline import llm
-from pipeline.extraction import ocr, declarations as extraction
+from pipeline.extraction import ocr, declarations as extraction, inference
 from pipeline.normalization import declarations as normalization
 from pipeline.compliance import evaluate as compliance
 from pipeline.extraction.declarations import FACT_MAP
@@ -11,7 +11,7 @@ from pipeline.measurement import font, reference
 KIND_BY_PATH = {path: kind for path, kind, _ in FACT_MAP.values()}
 
 
-def read_images(db, inspection_id: str) -> str:
+def read_images(db, inspection_id: str) -> tuple[str, int, list[dict]]:
     records = (
         db.query(InspectionImages)
         .filter(InspectionImages.inspection_id == inspection_id)
@@ -43,7 +43,7 @@ def read_images(db, inspection_id: str) -> str:
     db.commit()
     if not panels:
         raise RuntimeError("No readable text was found on the uploaded images")
-    return "\n".join(panels), len(panels)
+    return "\n".join(panels), len(panels), pages
 
 
 def store_declarations(db, inspection_id: str, values: dict):
@@ -109,6 +109,7 @@ def run_pipeline(db, inspection, reference_size_mm: float | None = None):
 
     ocr_text, panel_count, pages = read_images(db, inspection.id)
     extracted = extraction.extract(ocr_text)
+    extracted, _ = inference.reconcile(ocr_text, extracted)
     values = normalization.normalize(extracted)
     store_declarations(db, inspection.id, values)
     measure_fonts(db, inspection.id, extracted, pages, reference_size_mm)

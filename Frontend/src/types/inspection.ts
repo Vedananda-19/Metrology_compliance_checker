@@ -93,6 +93,9 @@ export interface Inspection {
     assignee_name: string | null;
     owner_name: string | null;
     priority: Priority;
+    verification_complete: boolean;
+    verified_at: string | null;
+    verified_by_name: string | null;
 }
 
 export interface RuleSummary {

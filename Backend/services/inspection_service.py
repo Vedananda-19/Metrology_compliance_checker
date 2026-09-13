@@ -261,6 +261,8 @@ def review_finding(inspection_id: str, rule_id: str, decision: str | None, note:
     if not can_review(inspection, user):
         raise HTTPException(403, "This case belongs to another officer")
 
+    inspection.verification_complete = False
+
     record = (
         db.query(FindingReviews)
         .filter(FindingReviews.inspection_id == inspection_id, FindingReviews.rule_id == rule_id)
@@ -322,5 +324,52 @@ def revise_declarations(inspection_id: str, values: dict, db, user):
     from pipeline.run import reevaluate
 
     reevaluate(db, inspection_id)
+    inspection.verification_complete = False
     db.commit()
     return inspection
+
+
+def pending_reviews(inspection) -> int:
+    result = (inspection.evaluation.result if inspection.evaluation else {}) or {}
+    reviewed = {review.rule_id for review in inspection.reviews}
+    return sum(
+        1
+        for finding in result.get("findings", [])
+        if finding["status"] == "NON_COMPLIANT" and finding["rule_id"] not in reviewed
+    )
+
+
+def finalize_verification(inspection_id: str, db, user):
+    inspection = get_visible(db, inspection_id, user)
+    if not can_review(inspection, user):
+        raise HTTPException(403, "This case belongs to another officer")
+    if inspection.status != "COMPLETED" or inspection.evaluation is None:
+        raise HTTPException(409, "Process the inspection before finalising verification")
+    if pending_reviews(inspection) > 0:
+        raise HTTPException(409, "Review every violation and unverifiable finding before finalising")
+
+    inspection.verification_complete = True
+    inspection.verified_at = datetime.now(timezone.utc)
+    inspection.verified_by = user.user_id
+    inspection.stage = STAGES[-1]
+    db.commit()
+    db.refresh(inspection)
+    return inspection
+
+
+def build_report(inspection_id: str, fmt: str, db, user):
+    from services.report import build
+
+    inspection = get_visible(db, inspection_id, user)
+    if not inspection.verification_complete:
+        raise HTTPException(409, "Finalise verification before creating the report")
+
+    data = build.gather(db, inspection)
+    slug = inspection.reference.replace("/", "-")
+    if fmt == "docx":
+        return (
+            build.render_docx(data),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            f"{slug}.docx",
+        )
+    return build.render_pdf(data), "application/pdf", f"{slug}.pdf"

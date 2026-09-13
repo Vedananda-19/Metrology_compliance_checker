@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Float, String, Text, JSON, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, Text, JSON, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base, embedding_column
 from datetime import datetime, timezone
@@ -42,10 +42,14 @@ class Inspections(Base):
     assigned_to = Column(String, ForeignKey("users.id"))
     note = Column(Text)
     error = Column(Text)
+    verification_complete = Column(Boolean, nullable=False, default=False)
+    verified_at = Column(DateTime(timezone=True))
+    verified_by = Column(String, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), default=now_utc)
 
     inspector = relationship("Users", foreign_keys=[user_id], back_populates="inspections")
     assignee = relationship("Users", foreign_keys=[assigned_to])
+    verifier = relationship("Users", foreign_keys=[verified_by])
     images = relationship("InspectionImages", back_populates="inspection", cascade="all, delete-orphan")
     ocr_texts = relationship("OcrTexts", back_populates="inspection", cascade="all, delete-orphan")
     declarations = relationship("Declarations", back_populates="inspection", cascade="all, delete-orphan")

@@ -38,12 +38,14 @@ const cardTone = (finding: Finding, reviewed: boolean) => {
 };
 
 const EvaluationView = ({ evaluation, reviews = [], busy, onReview }: Props) => {
-    const [filter, setFilter] = useState<Filter>("REVIEW");
-
     const findings = evaluation.result.findings ?? [];
+    const [filter, setFilter] = useState<Filter>(
+        findings.some((f) => f.status === "NON_COMPLIANT") ? "NON_COMPLIANT" : "ALL",
+    );
+
     const reviewOf = new Map(reviews.map((item) => [item.rule_id, item]));
     const needsReview = (finding: Finding) =>
-        (finding.status === "NON_COMPLIANT" || finding.status === "NOT_VERIFIABLE") && !reviewOf.has(finding.rule_id);
+        finding.status === "NON_COMPLIANT" && !reviewOf.has(finding.rule_id);
 
     const counts = {
         COMPLIANT: findings.filter((f) => f.status === "COMPLIANT").length,

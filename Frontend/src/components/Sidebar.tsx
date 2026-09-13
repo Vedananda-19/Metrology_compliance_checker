@@ -35,10 +35,10 @@ const Sidebar = ({ user }: { user: User | null }) => {
         <aside className="sidebar">
             <Link to={home} className="sidebarBrand">
                 <span className="sidebarMark" aria-hidden="true">
-                    <Icon name="vault" size={18} />
+                    <img src="/logo.png" alt="" />
                 </span>
                 <span className="sidebarBrandText">
-                    <strong>MetroGuard</strong>
+                    <strong>PRISM</strong>
                     <small>Legal Metrology</small>
                 </span>
             </Link>

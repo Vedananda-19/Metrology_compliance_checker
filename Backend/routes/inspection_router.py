@@ -17,6 +17,7 @@ from schemas import (
     ReviseModel,
     FontMeasurementOut,
 )
+from models import STAGES
 from services.auth_service import get_current_user
 from services import inspection_service, storage_service
 from pipeline.run import run_pipeline
@@ -31,6 +32,7 @@ def to_out(db, inspection) -> InspectionOut:
     payload.priority = inspection_service.derive_priority(db, inspection)
     payload.assignee_name = (inspection.assignee.full_name or inspection.assignee.username) if inspection.assignee else None
     payload.owner_name = (inspection.inspector.full_name or inspection.inspector.username) if inspection.inspector else None
+    payload.verified_by_name = (inspection.verifier.full_name or inspection.verifier.username) if inspection.verifier else None
     return payload
 
 
@@ -88,6 +90,25 @@ def revise_declarations(inspection_id: str, data: ReviseModel, db: db_dependency
     return get_inspection(inspection_id, db, user)
 
 
+@inspection_router.patch("/{inspection_id}/finalize", response_model=InspectionDetailOut)
+def finalize_verification(inspection_id: str, db: db_dependency, user: user_dependency):
+    inspection_service.finalize_verification(inspection_id, db, user)
+    return get_inspection(inspection_id, db, user)
+
+
+@inspection_router.get("/{inspection_id}/report")
+def download_report(inspection_id: str, db: db_dependency, user: user_dependency, format: str = "pdf"):
+    fmt = format.lower()
+    if fmt not in ("pdf", "docx"):
+        raise HTTPException(400, "Report format must be pdf or docx")
+    content, media_type, filename = inspection_service.build_report(inspection_id, fmt, db, user)
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @inspection_router.post("/{inspection_id}/images", response_model=list[ImageOut])
 def upload_images(inspection_id: str, db: db_dependency, user: user_dependency, files: list[UploadFile] = File(...)):
     return inspection_service.add_images(inspection_id, files, db, user)
@@ -111,6 +132,9 @@ def process(inspection_id: str, db: db_dependency, user: user_dependency, refere
     inspection = inspection_service.get_owned(db, inspection_id, user.user_id)
     inspection.status = "PROCESSING"
     inspection.error = None
+    inspection.verification_complete = False
+    if inspection.stage == STAGES[0]:
+        inspection.stage = STAGES[1]
     db.commit()
 
     try:
