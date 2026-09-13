@@ -609,7 +609,7 @@ def evaluate_rule(rule, facts, ruleset, tables, on_date):
             return {**out, "status": "REQUIRES_VERIFICATION", "queue": "REVIEW",
                     "reason": "Check failed but an exemption could not be ruled out", "possible_exemptions": unknown_exemptions}
         status = rule["outcome_on_fail"]
-        o = {**out, "status": status, "reason": rule["fail_message"]}
+        o = {**out, "status": status, "reason": rule["fail_message"], "missing_facts": sorted(c.missing)}
         if status == "REQUIRES_VERIFICATION": o["queue"] = "REVIEW"
         return o
     return {**out, "status": "REQUIRES_VERIFICATION",

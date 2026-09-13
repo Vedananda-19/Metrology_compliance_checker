@@ -1,4 +1,5 @@
 from engine import engine as rule_engine
+from pipeline.compliance import adjudicate
 from pipeline.normalization import declarations as normalization
 from datetime import date
 
@@ -50,9 +51,7 @@ def explain(entry) -> str:
     return "The package meets this requirement."
 
 
-def summarise(report: dict) -> str:
-    counts = report["counts"]
-    verdict = report["automated_verdict"]
+def summarise(counts: dict, verdict: str, rules_evaluated: int) -> str:
     if verdict == "NON_COMPLIANT":
         lead = f"{counts['NON_COMPLIANT']} requirement(s) were not met."
     elif verdict == "REQUIRES_VERIFICATION":
@@ -64,8 +63,20 @@ def summarise(report: dict) -> str:
     return (
         f"{lead} {counts['COMPLIANT']} passed, {counts['REQUIRES_VERIFICATION']} need verification, "
         f"{counts['EXEMPT']} exempt and {counts['NOT_APPLICABLE']} did not apply, "
-        f"out of {report['rules_evaluated']} rules in force."
+        f"out of {rules_evaluated} rules in force."
     )
+
+
+def verdict_after_review(report: dict, findings: list[dict]) -> str:
+    """The engine's verdict, re-read once the cross-check has withdrawn some violations."""
+    if any(finding["status"] == "NON_COMPLIANT" for finding in findings):
+        return "NON_COMPLIANT"
+    if report["automated_verdict"] != "NON_COMPLIANT":
+        return report["automated_verdict"]
+    if any(entry["status"] == "REQUIRES_VERIFICATION" and entry.get("queue") == "REVIEW"
+           for entry in report["results"]):
+        return "REQUIRES_VERIFICATION"
+    return "COMPLIANT"
 
 
 def evaluate(values: dict, panel_count: int, ocr_text: str) -> dict:
@@ -91,13 +102,38 @@ def evaluate(values: dict, panel_count: int, ocr_text: str) -> dict:
             }
         )
 
+    details = {
+        entry["rule_id"]: {
+            "notes": entry.get("notes") or [],
+            "missing": [normalization.label_for(path) for path in entry.get("missing_facts") or []],
+        }
+        for entry in report["results"]
+    }
+    findings = adjudicate.review(findings, values, ocr_text, details)
+
+    cleared = [finding for finding in findings if finding.get("cleared_by_review")]
+    counts = dict(report["counts"])
+    counts["NON_COMPLIANT"] -= len(cleared)
+    counts["COMPLIANT"] += len(cleared)
+    verdict = verdict_after_review(report, findings)
+
     findings.sort(key=lambda f: (f["status"] != "NON_COMPLIANT", SEVERITY_ORDER.get(f["severity"], 9)))
 
     return {
-        "verdict": report["automated_verdict"],
-        "summary": summarise(report),
+        "verdict": verdict,
+        "summary": summarise(counts, verdict, report["rules_evaluated"]),
         "rule_set_version": report["rule_set_version"],
-        "counts": report["counts"],
+        "counts": counts,
         "rules_evaluated": report["rules_evaluated"],
         "findings": findings,
+        "cleared_by_review": [
+            {
+                "rule_id": finding["rule_id"],
+                "rule_ref": finding["rule_ref"],
+                "requirement": finding["requirement"],
+                "reason": finding["review_reason"],
+                "engine_explanation": finding["engine_explanation"],
+            }
+            for finding in cleared
+        ],
     }

@@ -1,6 +1,4 @@
 import logging
-from functools import lru_cache
-from pathlib import Path
 
 from pydantic import BaseModel
 from pipeline import llm
@@ -8,16 +6,6 @@ from services.report import rules_context
 from config import INFERENCE_PROVIDER, INFERENCE_API_KEY, INFERENCE_MODEL
 
 logger = logging.getLogger(__name__)
-
-DIGEST_PATH = Path(__file__).with_name("rules_digest.txt")
-
-
-@lru_cache(maxsize=1)
-def rules_digest() -> str:
-    try:
-        return DIGEST_PATH.read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
 
 
 class Justification(BaseModel):
@@ -42,14 +30,6 @@ why each flagged item is a violation, grounded in the official rule text supplie
 - Write for a citizen who must understand the finding. Plain, factual, non-emotive."""
 
 
-def _context_block(rule_ids) -> str:
-    lines = []
-    for provision in rules_context.provisions_for(rule_ids):
-        number = provision.get("rule") or provision["rule_id"]
-        lines.append(f"[{provision['rule_id']}] Rule {number} — {provision['title']}\n{provision['text']}")
-    return "\n\n".join(lines)
-
-
 def _fallback(findings) -> dict:
     return {finding["rule_id"]: finding.get("explanation") or "" for finding in findings}
 
@@ -62,7 +42,7 @@ def justify(findings: list[dict]) -> dict:
         return _fallback(findings)
 
     rule_ids = [finding["rule_id"] for finding in findings]
-    context = _context_block(rule_ids)
+    context = rules_context.text_block(rule_ids)
 
     observed = []
     for finding in findings:
@@ -72,7 +52,7 @@ def justify(findings: list[dict]) -> dict:
             f"Observed on package: {finding.get('observed') or 'not recorded'}"
         )
 
-    digest = rules_digest()
+    digest = rules_context.rules_digest()
     background = f"Background - the packaged-commodities rules in brief:\n\n{digest}\n\n" if digest else ""
 
     result = llm.invoke_structured(

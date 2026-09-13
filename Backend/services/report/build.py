@@ -17,6 +17,10 @@ DECISION_LABEL = {
 CONFIRMED_DECISIONS = {"CONFIRMED", "VERIFIED_NON_COMPLIANT"}
 CLEARED_DECISIONS = {"DISMISSED", "VERIFIED_COMPLIANT"}
 
+# A violation the engine raised and the rule cross-check withdrew: the label meets the rule in
+# different words. It is reported as cleared, with its reason, rather than dropped silently.
+AUTO_CLEARED_LABEL = "Withdrawn on automated rule cross-check"
+
 
 def _person(user) -> str:
     if user is None:
@@ -51,6 +55,11 @@ def gather(db, inspection) -> dict:
 
     confirmed, cleared, not_verifiable = [], [], []
     for finding in findings:
+        if finding.get("cleared_by_review"):
+            row = _finding_row(finding, {"decision": None, "note": finding.get("review_reason")})
+            row["decision_label"] = AUTO_CLEARED_LABEL
+            cleared.append(row)
+            continue
         if finding["status"] not in ("NON_COMPLIANT", "NOT_VERIFIABLE"):
             continue
         review = reviews.get(finding["rule_id"])
