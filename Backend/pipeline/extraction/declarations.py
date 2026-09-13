@@ -91,6 +91,14 @@ return the declarations printed on it.
   matter to the assessment and must not be cleaned up.
 - net_quantity_text and mrp_text are the whole declaration as printed. net_quantity_value, mrp_value,
   manufacturing_month and manufacturing_year are plain numbers with no unit, currency or separator.
+- Whenever the label carries a net quantity, a price or a date, fill the number fields as well as the
+  text field. 'Net Wt. 70 g' is net_quantity_value 70 and net_quantity_unit g. 'M.R.P. Rs. 14.00' is
+  mrp_value 14.00. 'MFD: 08/2025' is manufacturing_month 8 and manufacturing_year 2025, and so is
+  'Mfd. AUG 2025'. Reading those numbers out of the printed wording is copying, not guessing, so do
+  not leave them null when the wording is there - the rules for quantity, price and date are checked
+  against the numbers, and a null reads as a declaration missing from the package.
+- A date under 'Best before', 'Use by' or 'Expiry' is not the date of manufacture. Leave the
+  manufacturing fields null when the label shows only a shelf-life date.
 - manufacturer_role_qualifier is the exact phrase used, such as 'Manufactured by', 'Packed by' or
   'Marketed by', or null if the label names a party without any such phrase."""
 

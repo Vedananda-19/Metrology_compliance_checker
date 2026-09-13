@@ -4,6 +4,13 @@ import re
 
 MIN_PANELS_FOR_COVERAGE = 1
 UNCLASSIFIED_TAG = "unclassified"
+INDIA = re.compile(r"(?i)\b(india|bharat)\b")
+
+# The rules match these against a strict pattern, so the fact has to hold the value itself.
+# The model copies the printed wording with it - "Tel: 1800 103 1947", "Email: care@acme.in".
+PHONE = re.compile(r"\+?[0-9][0-9()\-\s]{6,18}[0-9]")
+EMAIL = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
+PIN = re.compile(r"\b[1-9][0-9]{5}\b")
 
 UNIT_STATE = {
     "g": "solid", "gm": "solid", "gms": "solid", "kg": "solid", "mg": "solid",
@@ -58,6 +65,25 @@ def label_for(path: str) -> str:
     return LABELS.get(path, path)
 
 
+def _extracted(item: dict | None, pattern) -> dict | None:
+    """The value on its own, when the model brought the printed label along with it."""
+    if not item or not item.get("value"):
+        return None
+    text = str(item["value"]).strip()
+    match = pattern.search(text)
+    if match is None or match.group().strip() == text:
+        return None
+    return {**item, "value": match.group().strip()}
+
+
+def _pin_code(item: dict | None) -> dict | None:
+    """The PIN out of an address line - the rules check it, nothing else declares it."""
+    if not item or not item.get("value"):
+        return None
+    codes = PIN.findall(str(item["value"]))
+    return {**item, "value": codes[-1]} if codes else None
+
+
 def build_facts(values: dict, panel_count: int, ocr_text: str) -> dict:
     facts = dict(values)
 
@@ -82,11 +108,28 @@ def build_facts(values: dict, panel_count: int, ocr_text: str) -> dict:
     facts["label.full_text"] = {"value": ocr_text, "confidence": 1.0}
 
     importer = values.get("importer.name") or {}
-    country = values.get("product.country_of_manufacture") or {}
-    is_imported = bool(importer.get("value")) or bool(country.get("value"))
+    country = str((values.get("product.country_of_manufacture") or {}).get("value") or "").strip()
+    # "Country of Origin: India" is printed on domestic packages and means the opposite of
+    # imported - only a named importer or a foreign origin makes this an imported package
+    domestic = bool(country and INDIA.search(country))
+    if domestic:
+        # the rules compare this against "India" literally, so "Made in India" must read as India
+        facts["product.country_of_manufacture"] = {**values["product.country_of_manufacture"], "value": "India"}
+    is_imported = bool(importer.get("value")) or bool(country and not domestic)
     facts["product.is_imported"] = is_imported
-    if is_imported:
+    if country:
+        facts["product.packed_in_india"] = domestic
+    elif is_imported:
         facts["product.packed_in_india"] = False
+
+    for path, pattern in (("consumer_care.phone", PHONE), ("consumer_care.email", EMAIL)):
+        value = _extracted(values.get(path), pattern)
+        if value:
+            facts[path] = value
+
+    pin = _pin_code(values.get("manufacturer.address.text"))
+    if pin:
+        facts["manufacturer.address.pin"] = pin
 
     packer = values.get("packer.name") or {}
     manufacturer = values.get("manufacturer.name") or {}

@@ -1,12 +1,16 @@
+import logging
+
 from models import InspectionImages, OcrTexts, Declarations, Evaluations, FontMeasurements
 from services import storage_service
 from pipeline import llm
-from pipeline.extraction import ocr, declarations as extraction, inference
+from pipeline.extraction import ocr, declarations as extraction, inference, patterns
 from pipeline.normalization import declarations as normalization
 from pipeline.compliance import evaluate as compliance
 from pipeline.extraction.declarations import FACT_MAP
 from pipeline.preprocessing.images import decode, resize
 from pipeline.measurement import font, reference
+
+logger = logging.getLogger(__name__)
 
 KIND_BY_PATH = {path: kind for path, kind, _ in FACT_MAP.values()}
 
@@ -110,6 +114,9 @@ def run_pipeline(db, inspection, reference_size_mm: float | None = None):
     ocr_text, panel_count, pages = read_images(db, inspection.id)
     extracted = extraction.extract(ocr_text)
     extracted, _ = inference.reconcile(ocr_text, extracted)
+    extracted, filled = patterns.backfill(ocr_text, extracted)
+    if filled:
+        logger.info("Read %s declaration(s) off the label the model left empty: %s", len(filled), ", ".join(filled))
     values = normalization.normalize(extracted)
     store_declarations(db, inspection.id, values)
     measure_fonts(db, inspection.id, extracted, pages, reference_size_mm)
