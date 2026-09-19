@@ -10,7 +10,12 @@ from config import (
     INFERENCE_MIN_SIMILARITY,
 )
 from pipeline import llm
-from pipeline.extraction.declarations import FACT_MAP, LABELS, PackageDeclarations, Declared
+from pipeline.extraction.declarations import (
+    FACT_MAP,
+    LABELS,
+    PackageDeclarations,
+    Declared,
+)
 from datetime import date
 
 logger = logging.getLogger(__name__)
@@ -20,27 +25,21 @@ FIELDS = list(FACT_MAP) + ["manufacturer_role_qualifier"]
 # Derived value fields (numbers, units) are transformations of grounded text - a
 # net quantity of 41.5 or a month of 8 need not appear verbatim in the OCR - so they
 # skip the substring-grounding gate that guards free-text fields like names.
-VALUE_FIELDS = {field for field, (_, kind, _) in FACT_MAP.items() if kind in (int, float)}
+VALUE_FIELDS = {
+    field for field, (_, kind, _) in FACT_MAP.items() if kind in (int, float)
+}
 VALUE_FIELDS.add("net_quantity_unit")
 
-SYSTEM_PROMPT = """You are checking a first pass of declarations that another model pulled out of the
-OCR text of an Indian packaged commodity label. Your job is to file every value under the correct
-field and to make each one read cleanly. You are correcting placement and formatting, nothing else.
+SYSTEM_PROMPT = """You are checking a first pass of declarations that another model extracted from the OCR text of an Indian packaged commodity label. Your job is to place each value under the correct field and make it read cleanly. You are correcting placement and formatting, nothing else.
 
-- Work only from the OCR text. Every value you return must already appear there. Never add a
-  declaration the label does not carry, and never complete a partial name, address or number.
-- Move a value that the first pass filed under the wrong field. A manufacturer named under
-  'Marketed by' belongs in the marketer-style fields, not the manufacturer ones, and an address must
-  not sit in a name field.
-- Split a name from its address when the first pass ran them together, and join an address that OCR
-  broke across lines. Keep the printed wording and spelling.
-- Read company names properly. Repair obvious OCR damage in a name only when the intended reading is
-  unambiguous from the text, for example 'ACIVIE F00DS PVT LTD' to 'ACME FOODS PVT LTD'. If you are
-  not certain, leave it as printed.
-- Keep qualifiers such as 'about', 'minimum' or 'nett' exactly as printed. They matter legally.
-- Leave a field null when the label does not carry it. A missing declaration is a real finding, so an
-  invented one is worse than none.
-- Confidence is how sure you are that this value belongs to this field, between 0 and 1."""
+- Work only from the OCR text. Every value you return must be supported by text that appears in the OCR. Never invent, infer, or complete a declaration that is not explicitly present.
+- Move a value that the first pass placed under the wrong field. A manufacturer named under 'Marketed by' belongs in the marketer-style fields, not the manufacturer fields, and an address must not be placed in a name field.
+- Split a name from its address when the first pass combined them, and join an address that OCR split across lines. Do not combine text from separate declarations unless the OCR clearly shows they belong together.
+- Read company names carefully. Repair obvious character-level OCR damage only when the intended reading is unambiguous from the OCR, for example 'ACIVIE F00DS PVT LTD' to 'ACME FOODS PVT LTD'. If uncertain, preserve the OCR text.
+- Keep qualifiers such as 'about', 'minimum', or 'nett' exactly as printed. Do not change units, quantities, numbers, names, or wording unless correcting clear OCR damage.
+- Check the OCR text for declarations missing from the extracted fields and add them only when clearly supported by the OCR. Never infer or invent a missing declaration; a false addition is worse than an omission.
+- Do not remove or alter a value merely because it seems unusual or unexpected if it is clearly present in the OCR.
+- Confidence is how sure you are that the value belongs to this field, between 0 and 1."""
 
 
 def normalise(text) -> str:
@@ -57,7 +56,7 @@ def similarity(token: str, haystack: str) -> float:
         if width > len(haystack):
             continue
         for start in range(0, len(haystack) - width + 1, step):
-            matcher.set_seq1(haystack[start:start + width])
+            matcher.set_seq1(haystack[start : start + width])
             if matcher.real_quick_ratio() <= best or matcher.quick_ratio() <= best:
                 continue
             best = max(best, matcher.ratio())
@@ -146,13 +145,19 @@ def merge(first, second, ocr_text: str) -> tuple[PackageDeclarations, list[str]]
         is_value = field in VALUE_FIELDS
 
         if revised_value and not plausible(field, revised_value):
-            logger.info("Inference dropped an implausible value for %s: %s", field, revised_value)
+            logger.info(
+                "Inference dropped an implausible value for %s: %s",
+                field,
+                revised_value,
+            )
             revised_value = None
 
         if revised_value and (is_value or grounded(revised_value, haystack)):
             values[field] = revised
             if normalise(revised_value) != normalise(original_value or ""):
-                changes.append(f"{field}: {original_value or 'null'} -> {revised_value}")
+                changes.append(
+                    f"{field}: {original_value or 'null'} -> {revised_value}"
+                )
             continue
 
         if revised_value and not is_value and not grounded(revised_value, haystack):
@@ -170,7 +175,9 @@ def merge(first, second, ocr_text: str) -> tuple[PackageDeclarations, list[str]]
     return PackageDeclarations(**values), changes
 
 
-def reconcile(ocr_text: str, extracted: PackageDeclarations) -> tuple[PackageDeclarations, list[str]]:
+def reconcile(
+    ocr_text: str, extracted: PackageDeclarations
+) -> tuple[PackageDeclarations, list[str]]:
     if not INFERENCE_ENABLED or not INFERENCE_API_KEY:
         return extracted, []
 
@@ -196,5 +203,7 @@ def reconcile(ocr_text: str, extracted: PackageDeclarations) -> tuple[PackageDec
 
     merged, changes = merge(extracted, reviewed, ocr_text)
     if changes:
-        logger.info("Inference refiled %s declaration(s): %s", len(changes), "; ".join(changes))
+        logger.info(
+            "Inference refiled %s declaration(s): %s", len(changes), "; ".join(changes)
+        )
     return merged, changes

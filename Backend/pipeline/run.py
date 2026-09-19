@@ -9,6 +9,7 @@ from pipeline.compliance import evaluate as compliance
 from pipeline.extraction.declarations import FACT_MAP
 from pipeline.preprocessing.images import decode, resize
 from pipeline.measurement import font, reference
+from pipeline import progress
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,10 @@ def run_pipeline(db, inspection, reference_size_mm: float | None = None):
     if not llm.available():
         raise RuntimeError("No LLM API key is configured, so declarations cannot be extracted")
 
+    progress.publish(inspection.id, "ocr")
     ocr_text, panel_count, pages = read_images(db, inspection.id)
+
+    progress.publish(inspection.id, "extraction")
     extracted = extraction.extract(ocr_text)
     extracted, _ = inference.reconcile(ocr_text, extracted)
     extracted, filled = patterns.backfill(ocr_text, extracted)
@@ -119,8 +123,11 @@ def run_pipeline(db, inspection, reference_size_mm: float | None = None):
         logger.info("Read %s declaration(s) off the label the model left empty: %s", len(filled), ", ".join(filled))
     values = normalization.normalize(extracted)
     store_declarations(db, inspection.id, values)
+
+    progress.publish(inspection.id, "measurement")
     measure_fonts(db, inspection.id, extracted, pages, reference_size_mm)
 
+    progress.publish(inspection.id, "compliance")
     evaluation = compliance.evaluate(values, panel_count, ocr_text)
     store_evaluation(db, inspection.id, evaluation)
     return evaluation

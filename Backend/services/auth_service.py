@@ -71,3 +71,23 @@ def verify_token(db: db_dependency, token: str = Depends(OAuth2Scheme)) -> Curre
 
 def get_current_user(user: CurrentUser = Depends(verify_token)):
     return user
+
+
+def verify_ws_token(token: str | None) -> CurrentUser | None:
+    """Validate a JWT passed as a query parameter (WebSockets cannot send an
+    Authorization header from the browser). Returns None if the token is
+    missing or invalid, so the caller can close the socket."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("id")
+        if user_id is None:
+            return None
+        return CurrentUser(
+            user_id=user_id,
+            username=payload.get("sub"),
+            role=payload.get("role", "OFFICER"),
+        )
+    except (ExpiredSignatureError, JWTError):
+        return None

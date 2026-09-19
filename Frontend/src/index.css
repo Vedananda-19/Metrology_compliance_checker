@@ -1027,3 +1027,37 @@ button.stat { width: 100%; font: inherit; color: inherit; }
 .verifyBar strong { display: block; font-size: 0.95rem; }
 .verifyDone { color: var(--good); }
 .verifyActions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* --- Processing progress checklist --- */
+.progressList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.progressStep { display: flex; align-items: center; gap: 12px; font-size: 0.95rem; color: var(--text-faint); }
+.progressStep .progressDot {
+  width: 16px; height: 16px; border-radius: 50%; flex: 0 0 auto;
+  border: 2px solid var(--border-strong); background: var(--surface);
+}
+.progressStep--pending { color: var(--text-faint); }
+.progressStep--active { color: var(--text); font-weight: 600; }
+.progressStep--active .progressDot {
+  border-color: var(--brand); background: var(--brand);
+  animation: progressPulse 1.1s ease-in-out infinite;
+}
+.progressStep--done { color: var(--text-soft); }
+.progressStep--done .progressDot { border-color: var(--good); background: var(--good); }
+@keyframes progressPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(47, 107, 216, .35); } 50% { box-shadow: 0 0 0 5px rgba(47, 107, 216, 0); } }
+
+/* --- Toasts --- */
+.toastStack {
+  position: fixed; z-index: 1000; right: 20px; bottom: 20px;
+  display: flex; flex-direction: column; gap: 10px; max-width: min(360px, calc(100vw - 32px));
+}
+.toast {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 12px 16px; border-radius: var(--radius); font-size: 0.9rem; font-weight: 500;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-left: 4px solid var(--info);
+  box-shadow: var(--shadow-lift); animation: toastIn .18s ease-out;
+}
+.toast--success { border-left-color: var(--good); }
+.toast--error { border-left-color: var(--bad); }
+.toast--info { border-left-color: var(--info); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

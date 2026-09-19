@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Response, HTTPException
+import asyncio
+
+from fastapi import APIRouter, Depends, File, UploadFile, Response, HTTPException, WebSocket, WebSocketDisconnect
 from database import db_dependency
 from schemas import (
     CurrentUser,
@@ -18,9 +20,11 @@ from schemas import (
     FontMeasurementOut,
 )
 from models import STAGES
-from services.auth_service import get_current_user
+from services.auth_service import get_current_user, verify_ws_token
 from services import inspection_service, storage_service
 from pipeline.run import run_pipeline
+from pipeline import progress
+from pipeline.progress import hub
 from typing import Annotated
 
 inspection_router = APIRouter(prefix="/inspections", tags=["inspections"])
@@ -141,11 +145,35 @@ def process(inspection_id: str, db: db_dependency, user: user_dependency, refere
         run_pipeline(db, inspection, reference_size_mm)
         inspection.status = "COMPLETED"
         db.commit()
+        progress.publish(inspection_id, "done", "success", "Inspection processed")
     except Exception as error:
         db.rollback()
         inspection.status = "FAILED"
         inspection.error = str(error)
         db.commit()
+        progress.publish(inspection_id, "done", "error", str(error))
         raise HTTPException(400, str(error))
 
     return get_inspection(inspection_id, db, user)
+
+
+@inspection_router.websocket("/{inspection_id}/progress")
+async def progress_socket(websocket: WebSocket, inspection_id: str, token: str | None = None):
+    user = verify_ws_token(token)
+    if user is None:
+        await websocket.close(code=4401)
+        return
+
+    await websocket.accept()
+    hub.bind_loop(asyncio.get_running_loop())
+    queue = hub.subscribe(inspection_id)
+    try:
+        while True:
+            event = await queue.get()
+            await websocket.send_json(event)
+            if event.get("stage") == "done":
+                break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        hub.unsubscribe(inspection_id, queue)

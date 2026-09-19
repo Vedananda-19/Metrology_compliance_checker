@@ -28,7 +28,7 @@ def _vision_read(data: bytes) -> str:
         raise RuntimeError("No LLM API key is configured, so the vision OCR backend cannot run")
 
     image = resize(decode(data), MAX_IMAGE_EDGE)
-    encoded = base64.b64encode(encode_jpeg(image, 90)).decode("ascii")
+    encoded = base64.b64encode(encode_jpeg(image, 80)).decode("ascii")
 
     message = HumanMessage(content=[
         {"type": "text", "text": VISION_PROMPT},

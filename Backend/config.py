@@ -37,7 +37,9 @@ VISION_CREDENTIALS_PATH = _vision_path
 VISION_ENABLED = bool(_vision_path and Path(_vision_path).is_file())
 
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
-MAX_IMAGE_EDGE = 1600
+# 1280px on the long edge keeps label text sharp for OCR while cutting the
+# upload size (and vision-LLM latency) well below the old 1600px.
+MAX_IMAGE_EDGE = int(os.getenv("MAX_IMAGE_EDGE", "1280"))
 # OCR backend: "openrouter" (vision LLM, no native deps - deployable anywhere) or
 # "paddle" (local PaddleOCR; needs requirements-ocr-paddle.txt and Python 3.12).
 OCR_BACKEND = os.getenv("OCR_BACKEND", "openrouter").lower()

@@ -11,6 +11,8 @@ import {
     downloadReport,
 } from "../hooks/useInspection";
 import useImageUrls from "../hooks/useImageUrls";
+import { useProgress, PROGRESS_STAGES } from "../hooks/useProgress";
+import { useToast } from "../components/Toast";
 import { errorMessage } from "../apis/api";
 import ImageIntake from "../components/ImageIntake";
 import OcrTextView from "../components/OcrTextView";
@@ -49,6 +51,8 @@ function Inspection() {
     const uploadImages = useUploadImages(id);
     const deleteImage = useDeleteImage(id);
     const process = useProcess(id);
+    const toast = useToast();
+    const { current: currentStage } = useProgress(id, process.isPending);
     const reviewFinding = useReviewFinding(id);
     const reviseDeclarations = useReviseDeclarations(id);
     const finalize = useFinalize(id);
@@ -86,11 +90,18 @@ function Inspection() {
         }
     };
 
-    const rerun = () =>
-        run(async () => {
+    const rerun = async () => {
+        try {
+            setError("");
             await process.mutateAsync();
             setView("findings");
-        }, "Processing failed");
+            toast.success("Inspection processed");
+        } catch (caught) {
+            const message = errorMessage(caught, "Processing failed");
+            setError(message);
+            toast.error(message);
+        }
+    };
 
     const getReport = async (format: "pdf" | "docx") => {
         if (!id) return;
@@ -155,10 +166,25 @@ function Inspection() {
 
             {process.isPending && (
                 <section className="panel">
-                    <p className="muted">
-                        Reading the panels with OCR, extracting declarations, then running the rule engine. You can
-                        move between OCR, declarations and violations once this finishes.
-                    </p>
+                    <ol className="progressList">
+                        {PROGRESS_STAGES.map((stage, index) => {
+                            const activeIndex = PROGRESS_STAGES.findIndex((s) => s.key === currentStage);
+                            const state =
+                                activeIndex < 0
+                                    ? index === 0 ? "active" : "pending"
+                                    : index < activeIndex
+                                        ? "done"
+                                        : index === activeIndex
+                                            ? "active"
+                                            : "pending";
+                            return (
+                                <li key={stage.key} className={`progressStep progressStep--${state}`}>
+                                    <span className="progressDot" aria-hidden />
+                                    <span>{stage.label}</span>
+                                </li>
+                            );
+                        })}
+                    </ol>
                 </section>
             )}
 
