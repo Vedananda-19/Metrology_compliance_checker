@@ -1,0 +1,7 @@
+# Optional extras for the full local experience (NOT needed for the default deploy):
+#   - OCR_BACKEND=paddle : local PaddleOCR instead of the OpenRouter vision model
+#   - Rule 7 font-height measurement : needs OpenCV's ArUco module
+# These pull native libraries (libgomp) and are heavy. Requires Python 3.12.
+opencv-contrib-python==4.11.0.86
+paddleocr==2.9.1
+paddlepaddle==2.6.2

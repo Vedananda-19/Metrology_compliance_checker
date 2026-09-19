@@ -1,13 +1,24 @@
-import cv2
+from io import BytesIO
+
 import numpy as np
+from PIL import Image
 from config import BLUR_MIN_VARIANCE, BLUR_SAMPLE_EDGE, MAX_IMAGE_EDGE
+
+# Images are numpy arrays in BGR channel order (the OpenCV convention) so the
+# optional font-measurement code can consume them unchanged. Decode/resize/encode
+# go through Pillow so the core pipeline imports no OpenCV (and no libgomp) at boot.
 
 
 def decode(data: bytes):
-    image = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
-    if image is None:
-        raise ValueError("Image could not be decoded")
-    return image
+    try:
+        image = Image.open(BytesIO(data)).convert("RGB")
+    except Exception as error:
+        raise ValueError("Image could not be decoded") from error
+    return np.asarray(image)[:, :, ::-1].copy()
+
+
+def _to_pil(image) -> Image.Image:
+    return Image.fromarray(image[:, :, ::-1])
 
 
 def resize(image, max_edge: int = MAX_IMAGE_EDGE):
@@ -16,25 +27,25 @@ def resize(image, max_edge: int = MAX_IMAGE_EDGE):
     if longest <= max_edge:
         return image
     factor = max_edge / longest
-    return cv2.resize(image, (int(width * factor), int(height * factor)), interpolation=cv2.INTER_AREA)
+    resized = _to_pil(image).resize((int(width * factor), int(height * factor)), Image.LANCZOS)
+    return np.asarray(resized)[:, :, ::-1].copy()
 
 
-def enhance(image):
-    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    channels = list(cv2.split(lab))
-    channels[0] = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(channels[0])
-    return cv2.cvtColor(cv2.merge(channels), cv2.COLOR_LAB2BGR)
-
-
-def prepare(data: bytes):
-    return enhance(resize(decode(data)))
+def encode_jpeg(image, quality: int = 90) -> bytes:
+    buffer = BytesIO()
+    _to_pil(image).save(buffer, format="JPEG", quality=quality)
+    return buffer.getvalue()
 
 
 def laplacian_variance(image) -> float:
-    sample = resize(image, BLUR_SAMPLE_EDGE)
-    gray = cv2.cvtColor(sample, cv2.COLOR_BGR2GRAY)
-    return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    gray = np.asarray(_to_pil(image).convert("L"), dtype=np.float64)
+    laplacian = (
+        -4.0 * gray
+        + np.roll(gray, 1, axis=0) + np.roll(gray, -1, axis=0)
+        + np.roll(gray, 1, axis=1) + np.roll(gray, -1, axis=1)
+    )
+    return float(laplacian.var())
 
 
 def too_blurry(data: bytes) -> bool:
-    return laplacian_variance(decode(data)) < BLUR_MIN_VARIANCE
+    return laplacian_variance(resize(decode(data), BLUR_SAMPLE_EDGE)) < BLUR_MIN_VARIANCE

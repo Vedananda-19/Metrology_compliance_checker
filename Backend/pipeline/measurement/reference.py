@@ -1,13 +1,21 @@
-import cv2
 import numpy as np
 from config import ARUCO_DICT, MARKER_MIN_SIDE_PX, MARKER_MAX_SIDE_RATIO
 
 _detector = None
 
 
+def _load_cv2():
+    """OpenCV is optional and loaded lazily - it is only needed for font
+    measurement, and its native libgomp dependency may be absent on slim hosts."""
+    import cv2
+
+    return cv2
+
+
 def detector():
     global _detector
     if _detector is None:
+        cv2 = _load_cv2()
         dictionary = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, ARUCO_DICT))
         _detector = cv2.aruco.ArucoDetector(dictionary, cv2.aruco.DetectorParameters())
     return _detector
@@ -28,6 +36,11 @@ def usable(sides: list[float]) -> bool:
 def find_scale(image, reference_size_mm: float) -> dict:
     if not reference_size_mm or reference_size_mm <= 0:
         return {"status": "INVALID_REFERENCE_SIZE"}
+
+    try:
+        cv2 = _load_cv2()
+    except ImportError:
+        return {"status": "MEASUREMENT_UNAVAILABLE"}
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     corners, ids, _ = detector().detectMarkers(gray)

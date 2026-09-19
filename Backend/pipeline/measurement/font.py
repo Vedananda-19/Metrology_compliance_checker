@@ -1,6 +1,5 @@
 import re
 
-import cv2
 import numpy as np
 from pydantic import BaseModel
 from config import MIN_MEASUREMENT_CONFIDENCE, MIN_CHARACTER_PIXELS
@@ -66,6 +65,11 @@ def character_height_px(image, box: dict) -> tuple[float, int] | None:
     if crop.size == 0 or min(crop.shape[:2]) < MIN_CHARACTER_PIXELS:
         return None
 
+    try:
+        import cv2
+    except ImportError:
+        return None
+
     gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
     heights = candidate_heights(gray, adaptive(gray))
     if len(heights) < 2:
@@ -78,6 +82,8 @@ def character_height_px(image, box: dict) -> tuple[float, int] | None:
 
 
 def adaptive(gray):
+    import cv2
+
     block = max(11, min(gray.shape[0], gray.shape[1]) | 1)
     return cv2.adaptiveThreshold(
         gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block, 10
@@ -85,6 +91,8 @@ def adaptive(gray):
 
 
 def candidate_heights(gray, binary) -> list[float]:
+    import cv2
+
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     heights = []
     for contour in contours:

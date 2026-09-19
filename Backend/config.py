@@ -38,6 +38,9 @@ VISION_ENABLED = bool(_vision_path and Path(_vision_path).is_file())
 
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 MAX_IMAGE_EDGE = 1600
+# OCR backend: "openrouter" (vision LLM, no native deps - deployable anywhere) or
+# "paddle" (local PaddleOCR; needs requirements-ocr-paddle.txt and Python 3.12).
+OCR_BACKEND = os.getenv("OCR_BACKEND", "openrouter").lower()
 OCR_LANG = os.getenv("OCR_LANG", "en")
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/bmp"}
 BLUR_SAMPLE_EDGE = int(os.getenv("BLUR_SAMPLE_EDGE", "640"))
